@@ -1,0 +1,11 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Each online game is one document: games/<ROOM CODE>.
+    // Any signed-in visitor (anonymous sign-in happens automatically) can read and write games.
+    match /games/{code} {
+      allow read, write: if request.auth != null
+                         && code.matches('^[A-Z]{4}$');
+    }
+  }
+}

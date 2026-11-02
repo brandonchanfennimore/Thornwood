@@ -1,0 +1,9 @@
+{
+  "name": "thornwood",
+  "version": "1.0.0",
+  "description": "Thornwood — an asymmetric woodland war game for 2–4 players, online multiplayer with AI opponents.",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" },
+  "license": "MIT"
+}

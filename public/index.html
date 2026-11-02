@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thornwood</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">Thornwood</div>
+  <div class="top-right"><span id="roomTag"></span><button class="ghost" id="rulesBtn">Rules</button></div>
+</header>
+
+<main id="home" class="screen">
+  <section class="hero">
+    <h1>Thornwood</h1>
+    <p class="lede">Four woodland factions fight over a forest, and each one plays by its own rules. Badgers dig, rabbits breed, owls hunt and otters trade. The first to 30 renown wins.</p>
+    <div class="card-panel">
+      <label>Your name <input id="nameIn" maxlength="20" placeholder="e.g. Hazel"></label>
+      <div class="row">
+        <button id="createBtn" class="primary">Create a game</button>
+      </div>
+      <div class="divider"><span>or join a friend</span></div>
+      <div class="row">
+        <input id="codeIn" maxlength="4" placeholder="Room code" class="code-in">
+        <button id="joinBtn">Join</button>
+      </div>
+      <p id="homeErr" class="err"></p>
+    </div>
+  </section>
+</main>
+
+<main id="lobby" class="screen hidden">
+  <section class="hero">
+    <h2>Room <span id="lobbyCode" class="mono"></span></h2>
+    <p class="lede">Send friends this link, or have them enter the code. Fill the empty seats with AI players or remove them.</p>
+    <div class="invite"><input id="inviteLink" readonly><button id="copyBtn">Copy link</button></div>
+    <div id="seats"></div>
+    <div class="row" id="hostRow">
+      <button id="addSeatBtn">+ Add seat</button>
+      <button id="startBtn" class="primary">Start game</button>
+    </div>
+    <p id="lobbyMsg" class="muted"></p>
+    <p id="lobbyErr" class="err"></p>
+  </section>
+</main>
+
+<main id="game" class="screen hidden">
+  <div class="board-wrap">
+    <div class="turnbar" id="turnbar"></div>
+    <svg id="map" viewBox="0 0 1000 720" role="img" aria-label="Forest map"></svg>
+    <div class="legend">
+      <span><i class="sw meadow"></i>Meadow</span><span><i class="sw marsh"></i>Marsh</span><span><i class="sw grove"></i>Grove</span>
+      <span><i class="sw river"></i>River path</span><span class="muted">Squares are building slots. Click a region to see what you can do there.</span>
+    </div>
+  </div>
+  <aside class="side">
+    <div id="players"></div>
+    <div class="panel" id="actionPanel"></div>
+    <div class="panel"><h3>Your hand</h3><div id="hand" class="hand"></div></div>
+    <div class="panel"><h3>Chronicle</h3><div id="log" class="log"></div></div>
+  </aside>
+</main>
+
+<div id="toast" class="toast hidden"></div>
+
+<dialog id="rules">
+  <div class="rules-body">
+    <button class="ghost close" id="closeRules">✕</button>
+    <h2>How to play Thornwood</h2>
+    <p><b>Goal.</b> Be the first to reach <b>30 renown</b>. If nobody does by the end of round 20, the player with the most renown wins.</p>
+    <p><b>The forest.</b> The map has 13 regions. Each is meadow, marsh or grove, and each has 1–2 building slots. Blue paths are rivers. The <b>season</b> moves on every round: meadow → marsh → grove.</p>
+    <p><b>Rule.</b> Whoever has the most pieces (critters plus buildings) in a region rules it. A tie means nobody does.</p>
+    <p><b>Moving.</b> Move any number of critters to an adjacent region. You must rule the region you leave or the one you enter.</p>
+    <p><b>Battle.</b> The attacker rolls one d6 per critter (max 3) and the defender does the same. Each 4+ is a hit. Owls roll 2 dice each (max 4). A defender with a building there gets +1 die. A defender with no critters there gets no dice and takes +1 hit. Hits remove critters first, then buildings. Destroying a building earns 1 renown.</p>
+    <p><b>Cards.</b> Every card belongs to a terrain or is a wild Moonlight card. Cards pay terrain costs and also have an effect when played: Rally, Forage, Hasten or Provision. <b>Ambush</b> cards trigger by themselves when you are attacked in a region of their terrain. At the end of your turn, draw 1 card, then discard down to 5.</p>
+    <h3>Factions</h3>
+    <p><b style="color:var(--badger)">Badger Clans</b>: 3 actions. Each sett gives 1 stone at the start of your turn. <i>Dig</i> a sett in a region you rule for 1–3 stone, gaining renown. Once per turn, <i>Muster</i> adds 1 badger at each sett. At the end of your turn, score 1 per sett in the season's terrain. Badgers hit on 3+ when defending. You can discard a card to <i>Quarry</i> 1 stone.</p>
+    <p><b style="color:var(--rabbit)">Rabbit Warrens</b>: 3 actions and lots of critters. At the start of your turn, <i>Breed</i> adds +1 rabbit in up to 4 regions you rule. <i>Burst</i> by paying a card matching a region where you have a rabbit to add 3 rabbits there. At the end of your turn, score 1 per region you rule in the season's terrain, +1 for every 3 regions you rule.</p>
+    <p><b style="color:var(--owl)">Owl Parliament</b>: few but deadly. You get 2 actions, +1 per nest. Owls <i>fly</i> up to 2 regions and ignore rule. Once per turn, <i>Hatch</i> adds 1 owl at each nest. Build a nest with a matching card where you rule. Score 1 renown each time an attack removes enemy critters. Nests score 0/1/2/3 at the end of your turn.</p>
+    <p><b style="color:var(--otter)">Otter Company</b>: actions cost coins. Moving costs 1 coin, attacking 2 and hiring 2 otters at a post 2. Moves along rivers ignore rule. You collect 1 coin plus 1 per post each turn, and a 1-coin toll whenever another faction moves into a region with your post. Open a <i>trading post</i> in a riverside region for 3 coins plus a matching card. At the end of your turn, each post scores 1, or 2 if another faction rules its region. You can sell cards for coins.</p>
+  </div>
+</dialog>
+
+<script src="engine.js"></script>
+<script src="client.js"></script>
+</body>
+</html>
