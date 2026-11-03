@@ -648,10 +648,11 @@
     const st = shown, myF = myFaction();
     $('track').innerHTML = st.players.map((p, i) => {
       const nb = E.buildingsOnMap(st, p.faction), tot = E.FACTIONS[p.faction].critters;
-      const res = p.faction === 'badger' ? `${p.stone} stone · ${nb}/6 setts` : p.faction === 'otter' ? `${p.coins} coins · ${nb}/5 posts` : p.faction === 'owl' ? `${nb}/4 nests` : `rules ${E.ruledCount(st, 'rabbit')} clearings`;
+      const res = p.faction === 'badger' ? [`<b>${p.stone}</b> stone`, `<b>${nb}/6</b> setts`] : p.faction === 'otter' ? [`<b>${p.coins}</b> coins`, `<b>${nb}/5</b> posts`] : p.faction === 'owl' ? [`<b>${nb}/4</b> nests`] : [`rules <b>${E.ruledCount(st, 'rabbit')}</b> clearings`];
+      const stats = [`<span class="wr"><b>${tot - E.supply(st, p.faction)}/${tot}</b> warriors</span>`, ...res.map(x => `<span>${x}</span>`), `<span><b>${p.hand.length}</b> cards</span>`];
       return `<div class="pchip ${i === st.current && st.phase !== 'over' ? 'cur' : ''}" data-f="${p.faction}" style="--pc:${E.FACTIONS[p.faction].color}">
-        ${emblem(p.faction, 40)}<div style="min-width:0"><div class="nm">${esc(p.name)}${p.faction === myF ? ' (you)' : ''}</div><div class="sub wr"><b>${tot - E.supply(st, p.faction)}/${tot}</b> warriors</div><div class="sub">${E.FACTIONS[p.faction].name}${p.ai ? ' · AI' : ''}<br>${res}<br>${p.hand.length} cards</div></div>
-        <div class="vp">${p.renown}<small>RENOWN</small></div><div class="bar"><i style="width:${Math.min(100, p.renown / E.WIN * 100)}%"></i></div></div>`;
+        ${emblem(p.faction, 40)}<div style="min-width:0"><div class="nm">${esc(p.name)}${p.faction === myF ? ' (you)' : ''}</div><div class="sub">${E.FACTIONS[p.faction].name}${p.ai ? ' · AI' : ''}</div></div>
+        <div class="vp">${p.renown}<small>RENOWN</small></div><div class="stats">${stats.join('')}</div><div class="bar"><i style="width:${Math.min(100, p.renown / E.WIN * 100)}%"></i></div></div>`;
     }).join('');
   }
   function icon(id) { return `<svg class="ic"><use href="#i-${id}" width="100%" height="100%"/></svg>`; }
