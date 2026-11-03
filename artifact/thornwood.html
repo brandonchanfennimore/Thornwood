@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* Layout: a tabletop. The player track runs across the top, the illustrated map fills the middle with a turn guide beside it, and your hand sits in a dock right below the map. */
+/* Layout: a tabletop. The player track runs down the left, the illustrated map fills the middle with a turn guide on the right, and your hand sits in a dock right below the map. */
 :root {
   --bg: #e4e8dc; --panel: #f6f7f1; --ink: #1d2820; --muted: #5b685d; --line: #c8d0c0;
   --accent: #2c5a47; --accent-ink: #f6f7f1; --err: #a3392b; --gold: #d9a520;
@@ -69,7 +69,7 @@ label { display: flex; flex-direction: column; gap: 4px; font-weight: 500; }
 
 /* table */
 .table { display: flex; flex-direction: column; gap: 10px; padding-bottom: 8px; }
-.track { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+.track { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .pchip { position: relative; display: grid; grid-template-columns: 40px 1fr auto; gap: 8px; align-items: center; padding: 7px 10px; border-radius: 12px; background: var(--panel); border: 2px solid var(--line); transition: border-color .3s, transform .3s; }
 .pchip.cur { border-color: var(--pc); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.12); }
 .pchip .nm { font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
@@ -82,17 +82,16 @@ label { display: flex; flex-direction: column; gap: 4px; font-weight: 500; }
   .track { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
   .pchip { grid-template-columns: 30px 1fr auto; padding: 6px 8px; gap: 6px; }
   .pchip > svg { width: 30px; height: 30px; }
-  .pchip .sub { display: none; }
+  .pchip .sub:not(.wr) { display: none; }
   .pchip .vp { font-size: 22px; } .pchip .vp small { display: none; }
 }
 .float { position: absolute; right: 10px; top: -8px; font: 800 18px var(--display); color: var(--gold); text-shadow: 0 1px 0 rgba(0,0,0,.4); animation: floatup 1.6s ease-out forwards; pointer-events: none; }
 @keyframes floatup { from { opacity: 0; transform: translateY(8px); } 15% { opacity: 1; } to { opacity: 0; transform: translateY(-26px); } }
 
-.mid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 12px; align-items: start; }
-@media (max-width: 980px) { .mid { grid-template-columns: 1fr; } }
+.mid { display: grid; grid-template-columns: 220px minmax(0, 1fr) 320px; gap: 12px; align-items: start; }
+@media (max-width: 980px) { .mid { grid-template-columns: 1fr; } .track { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); } }
 .board { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-/* size the wrapper to the map's aspect ratio so the map fills it with no letterboxing */
-.mapwrap { position: relative; width: min(100%, calc(max(420px, 100vh - 390px) * 1020 / 790)); margin-inline: auto; }
+.mapwrap { position: relative; }
 #map { width: 100%; height: auto; aspect-ratio: 1020 / 790; display: block; border-radius: 16px; background: #50704a; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
 .banner { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); max-width: calc(100% - 24px); width: max-content; display: flex; gap: 10px; align-items: center; padding: 8px 16px 8px 8px; border-radius: 999px; background: rgba(20,26,22,.88); color: #f3f1e8; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,.3); pointer-events: none; transition: opacity .25s; }
 .banner svg { width: 30px; height: 30px; flex: none; }
@@ -340,6 +339,9 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
           <label for="soloCount">Players
             <select id="soloCount"><option value="2">2</option><option value="3">3</option><option value="4" selected>4</option></select>
           </label>
+          <label for="soloLevel">AI difficulty
+            <select id="soloLevel"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select>
+          </label>
           <button id="soloBtn" class="primary">Start solo game</button>
         </div>
       </div>
@@ -363,6 +365,9 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
     <div class="row" style="align-items:center"><span class="roomcode" id="lobbyCode"></span><button id="copyBtn">Copy code</button></div>
     <p class="muted">Friends open this page and enter the code. To join, they need Contributor access to this page or higher, which you set in the Share menu. Set empty seats to AI or remove them.</p>
     <div id="seats"></div>
+    <label for="lobbyLevel">AI difficulty (all AI players)
+      <select id="lobbyLevel"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select>
+    </label>
     <div class="row" id="hostRow"><button id="addSeatBtn">Add seat</button><button id="startBtn" class="primary">Start game</button></div>
     <p id="lobbyMsg" class="muted"></p>
     <p id="lobbyErr" class="err" role="alert"></p>
@@ -372,8 +377,8 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
 
 <main id="game" hidden>
   <div class="table">
-    <div class="track" id="track"></div>
     <div class="mid">
+      <div class="track" id="track"></div>
       <div class="board">
       <div class="mapwrap" id="mapwrap">
         <svg id="map" viewBox="-10 -14 1020 790" role="img" aria-label="Forest map">
@@ -907,15 +912,20 @@ function moveCount(s, f, a) {
   return Math.max(1, a.max - keep);
 }
 
-function chooseAction(s, f) {
+// noise: random jitter added to each score (more = sloppier picks); quit: end the turn when the best score is below this.
+// hard is the AI at full strength; medium and easy add mistakes on top of it.
+const LEVELS = { easy: { noise: 20, quit: 4 }, medium: { noise: 8, quit: 2 }, hard: { noise: 0.3, quit: 0.5 } };
+
+function chooseAction(s, f, level) {
   const acts = E.listActions(s, f);
   if (!acts.length) return null;
+  const L = LEVELS[level] || LEVELS.medium;
   let best = null, bv = -Infinity;
   for (const a of acts) {
-    const v = scoreAction(s, f, a) + Math.random() * 0.8;
+    const v = scoreAction(s, f, a) + Math.random() * L.noise;
     if (v > bv) { bv = v; best = a; }
   }
-  if (s.phase === 'main' && bv < 0.5) best = acts.find(a => a.type === 'end');
+  if (s.phase === 'main' && bv < L.quit) best = acts.find(a => a.type === 'end');
   const out = { ...best };
   if (out.type === 'move') out.count = moveCount(s, f, best);
   return out;
@@ -982,7 +992,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = api; else 
     const seats = [{ faction: f, type: 'human', uid: me, name: myName() }, ...others.map(x => ({ faction: x, type: 'ai' }))]
       .sort((a, b) => E.FACTION_KEYS.indexOf(a.faction) - E.FACTION_KEYS.indexOf(b.faction));
     mode = 'solo';
-    receive({ seats, status: 'playing', hostId: me, gid: newGid(), state: E.newGame(seatsToPlayers(seats)), last: null });
+    receive({ seats, level: $('soloLevel').value, status: 'playing', hostId: me, gid: newGid(), state: E.newGame(seatsToPlayers(seats)), last: null });
   };
   const code = () => Array.from({ length: 4 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)]).join('');
   $('createBtn').onclick = async () => {
@@ -1058,6 +1068,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = api; else 
     }).join('');
     $('seats').querySelectorAll('select,button').forEach(el => { el[el.tagName === 'SELECT' ? 'onchange' : 'onclick'] = () => seatOp(el.dataset.op, +el.dataset.i, el.value); });
     $('hostRow').hidden = !host;
+    $('lobbyLevel').value = g.level || 'medium'; $('lobbyLevel').disabled = !host;
     $('addSeatBtn').disabled = g.seats.length >= 4;
     $('lobbyMsg').textContent = host ? 'You are the host. Friends join with the code above.' : 'Waiting for the host to start the game…';
   }
@@ -1070,6 +1081,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = api; else 
     save(g);
   }
   $('addSeatBtn').onclick = () => seatOp('add');
+  $('lobbyLevel').onchange = () => save({ ...clone(game), level: $('lobbyLevel').value });
   $('startBtn').onclick = () => {
     err('lobbyErr');
     const g = clone(game);
@@ -1123,7 +1135,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = api; else 
       const g = clone(game), st = g.state, f = st.players[st.current].faction;
       if (!st.players[st.current].ai || st.phase === 'over') return;
       let a;
-      try { a = AI.chooseAction(st, f); E.apply(st, f, a); } catch (e) { a = { type: 'end' }; try { E.apply(st, f, a); } catch {} }
+      try { a = AI.chooseAction(st, f, game.level); E.apply(st, f, a); } catch (e) { a = { type: 'end' }; try { E.apply(st, f, a); } catch {} }
       g.last = { seq: st.seq, f, a: stripAct(a) };
       save(g);
     };
@@ -1545,10 +1557,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = api; else 
   function renderTrack() {
     const st = shown, myF = myFaction();
     $('track').innerHTML = st.players.map((p, i) => {
-      const nb = E.buildingsOnMap(st, p.faction);
+      const nb = E.buildingsOnMap(st, p.faction), tot = E.FACTIONS[p.faction].critters;
       const res = p.faction === 'badger' ? `${p.stone} stone · ${nb}/6 setts` : p.faction === 'otter' ? `${p.coins} coins · ${nb}/5 posts` : p.faction === 'owl' ? `${nb}/4 nests` : `rules ${E.ruledCount(st, 'rabbit')} clearings`;
       return `<div class="pchip ${i === st.current && st.phase !== 'over' ? 'cur' : ''}" data-f="${p.faction}" style="--pc:${E.FACTIONS[p.faction].color}">
-        ${emblem(p.faction, 40)}<div style="min-width:0"><div class="nm">${esc(p.name)}${p.faction === myF ? ' (you)' : ''}</div><div class="sub">${E.FACTIONS[p.faction].name}${p.ai ? ' · AI' : ''}<br>${res} · ${p.hand.length} cards</div></div>
+        ${emblem(p.faction, 40)}<div style="min-width:0"><div class="nm">${esc(p.name)}${p.faction === myF ? ' (you)' : ''}</div><div class="sub wr"><b>${tot - E.supply(st, p.faction)}/${tot}</b> warriors</div><div class="sub">${E.FACTIONS[p.faction].name}${p.ai ? ' · AI' : ''}<br>${res}<br>${p.hand.length} cards</div></div>
         <div class="vp">${p.renown}<small>RENOWN</small></div><div class="bar"><i style="width:${Math.min(100, p.renown / E.WIN * 100)}%"></i></div></div>`;
     }).join('');
   }

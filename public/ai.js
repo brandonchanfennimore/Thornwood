@@ -72,15 +72,20 @@ function moveCount(s, f, a) {
   return Math.max(1, a.max - keep);
 }
 
-function chooseAction(s, f) {
+// noise: random jitter added to each score (more = sloppier picks); quit: end the turn when the best score is below this.
+// hard is the AI at full strength; medium and easy add mistakes on top of it.
+const LEVELS = { easy: { noise: 20, quit: 4 }, medium: { noise: 8, quit: 2 }, hard: { noise: 0.3, quit: 0.5 } };
+
+function chooseAction(s, f, level) {
   const acts = E.listActions(s, f);
   if (!acts.length) return null;
+  const L = LEVELS[level] || LEVELS.medium;
   let best = null, bv = -Infinity;
   for (const a of acts) {
-    const v = scoreAction(s, f, a) + Math.random() * 0.8;
+    const v = scoreAction(s, f, a) + Math.random() * L.noise;
     if (v > bv) { bv = v; best = a; }
   }
-  if (s.phase === 'main' && bv < 0.5) best = acts.find(a => a.type === 'end');
+  if (s.phase === 'main' && bv < L.quit) best = acts.find(a => a.type === 'end');
   const out = { ...best };
   if (out.type === 'move') out.count = moveCount(s, f, best);
   return out;

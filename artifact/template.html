@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* Layout: a tabletop. The player track runs across the top, the illustrated map fills the middle with a turn guide beside it, and your hand sits in a dock right below the map. */
+/* Layout: a tabletop. The player track runs down the left, the illustrated map fills the middle with a turn guide on the right, and your hand sits in a dock right below the map. */
 :root {
   --bg: #e4e8dc; --panel: #f6f7f1; --ink: #1d2820; --muted: #5b685d; --line: #c8d0c0;
   --accent: #2c5a47; --accent-ink: #f6f7f1; --err: #a3392b; --gold: #d9a520;
@@ -69,7 +69,7 @@ label { display: flex; flex-direction: column; gap: 4px; font-weight: 500; }
 
 /* table */
 .table { display: flex; flex-direction: column; gap: 10px; padding-bottom: 8px; }
-.track { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+.track { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .pchip { position: relative; display: grid; grid-template-columns: 40px 1fr auto; gap: 8px; align-items: center; padding: 7px 10px; border-radius: 12px; background: var(--panel); border: 2px solid var(--line); transition: border-color .3s, transform .3s; }
 .pchip.cur { border-color: var(--pc); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.12); }
 .pchip .nm { font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
@@ -82,17 +82,16 @@ label { display: flex; flex-direction: column; gap: 4px; font-weight: 500; }
   .track { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
   .pchip { grid-template-columns: 30px 1fr auto; padding: 6px 8px; gap: 6px; }
   .pchip > svg { width: 30px; height: 30px; }
-  .pchip .sub { display: none; }
+  .pchip .sub:not(.wr) { display: none; }
   .pchip .vp { font-size: 22px; } .pchip .vp small { display: none; }
 }
 .float { position: absolute; right: 10px; top: -8px; font: 800 18px var(--display); color: var(--gold); text-shadow: 0 1px 0 rgba(0,0,0,.4); animation: floatup 1.6s ease-out forwards; pointer-events: none; }
 @keyframes floatup { from { opacity: 0; transform: translateY(8px); } 15% { opacity: 1; } to { opacity: 0; transform: translateY(-26px); } }
 
-.mid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 12px; align-items: start; }
-@media (max-width: 980px) { .mid { grid-template-columns: 1fr; } }
+.mid { display: grid; grid-template-columns: 220px minmax(0, 1fr) 320px; gap: 12px; align-items: start; }
+@media (max-width: 980px) { .mid { grid-template-columns: 1fr; } .track { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); } }
 .board { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-/* size the wrapper to the map's aspect ratio so the map fills it with no letterboxing */
-.mapwrap { position: relative; width: min(100%, calc(max(420px, 100vh - 390px) * 1020 / 790)); margin-inline: auto; }
+.mapwrap { position: relative; }
 #map { width: 100%; height: auto; aspect-ratio: 1020 / 790; display: block; border-radius: 16px; background: #50704a; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
 .banner { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); max-width: calc(100% - 24px); width: max-content; display: flex; gap: 10px; align-items: center; padding: 8px 16px 8px 8px; border-radius: 999px; background: rgba(20,26,22,.88); color: #f3f1e8; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,.3); pointer-events: none; transition: opacity .25s; }
 .banner svg { width: 30px; height: 30px; flex: none; }
@@ -340,6 +339,9 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
           <label for="soloCount">Players
             <select id="soloCount"><option value="2">2</option><option value="3">3</option><option value="4" selected>4</option></select>
           </label>
+          <label for="soloLevel">AI difficulty
+            <select id="soloLevel"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select>
+          </label>
           <button id="soloBtn" class="primary">Start solo game</button>
         </div>
       </div>
@@ -363,6 +365,9 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
     <div class="row" style="align-items:center"><span class="roomcode" id="lobbyCode"></span><button id="copyBtn">Copy code</button></div>
     <p class="muted">Friends open this page and enter the code. To join, they need Contributor access to this page or higher, which you set in the Share menu. Set empty seats to AI or remove them.</p>
     <div id="seats"></div>
+    <label for="lobbyLevel">AI difficulty (all AI players)
+      <select id="lobbyLevel"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select>
+    </label>
     <div class="row" id="hostRow"><button id="addSeatBtn">Add seat</button><button id="startBtn" class="primary">Start game</button></div>
     <p id="lobbyMsg" class="muted"></p>
     <p id="lobbyErr" class="err" role="alert"></p>
@@ -372,8 +377,8 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
 
 <main id="game" hidden>
   <div class="table">
-    <div class="track" id="track"></div>
     <div class="mid">
+      <div class="track" id="track"></div>
       <div class="board">
       <div class="mapwrap" id="mapwrap">
         <svg id="map" viewBox="-10 -14 1020 790" role="img" aria-label="Forest map">

@@ -55,7 +55,7 @@
     const seats = [{ faction: f, type: 'human', uid: me, name: myName() }, ...others.map(x => ({ faction: x, type: 'ai' }))]
       .sort((a, b) => E.FACTION_KEYS.indexOf(a.faction) - E.FACTION_KEYS.indexOf(b.faction));
     mode = 'solo';
-    receive({ seats, status: 'playing', hostId: me, gid: newGid(), state: E.newGame(seatsToPlayers(seats)), last: null });
+    receive({ seats, level: $('soloLevel').value, status: 'playing', hostId: me, gid: newGid(), state: E.newGame(seatsToPlayers(seats)), last: null });
   };
   const code = () => Array.from({ length: 4 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)]).join('');
   $('createBtn').onclick = async () => {
@@ -131,6 +131,7 @@
     }).join('');
     $('seats').querySelectorAll('select,button').forEach(el => { el[el.tagName === 'SELECT' ? 'onchange' : 'onclick'] = () => seatOp(el.dataset.op, +el.dataset.i, el.value); });
     $('hostRow').hidden = !host;
+    $('lobbyLevel').value = g.level || 'medium'; $('lobbyLevel').disabled = !host;
     $('addSeatBtn').disabled = g.seats.length >= 4;
     $('lobbyMsg').textContent = host ? 'You are the host. Friends join with the code above.' : 'Waiting for the host to start the game…';
   }
@@ -143,6 +144,7 @@
     save(g);
   }
   $('addSeatBtn').onclick = () => seatOp('add');
+  $('lobbyLevel').onchange = () => save({ ...clone(game), level: $('lobbyLevel').value });
   $('startBtn').onclick = () => {
     err('lobbyErr');
     const g = clone(game);
@@ -196,7 +198,7 @@
       const g = clone(game), st = g.state, f = st.players[st.current].faction;
       if (!st.players[st.current].ai || st.phase === 'over') return;
       let a;
-      try { a = AI.chooseAction(st, f); E.apply(st, f, a); } catch (e) { a = { type: 'end' }; try { E.apply(st, f, a); } catch {} }
+      try { a = AI.chooseAction(st, f, game.level); E.apply(st, f, a); } catch (e) { a = { type: 'end' }; try { E.apply(st, f, a); } catch {} }
       g.last = { seq: st.seq, f, a: stripAct(a) };
       save(g);
     };
@@ -618,10 +620,10 @@
   function renderTrack() {
     const st = shown, myF = myFaction();
     $('track').innerHTML = st.players.map((p, i) => {
-      const nb = E.buildingsOnMap(st, p.faction);
+      const nb = E.buildingsOnMap(st, p.faction), tot = E.FACTIONS[p.faction].critters;
       const res = p.faction === 'badger' ? `${p.stone} stone · ${nb}/6 setts` : p.faction === 'otter' ? `${p.coins} coins · ${nb}/5 posts` : p.faction === 'owl' ? `${nb}/4 nests` : `rules ${E.ruledCount(st, 'rabbit')} clearings`;
       return `<div class="pchip ${i === st.current && st.phase !== 'over' ? 'cur' : ''}" data-f="${p.faction}" style="--pc:${E.FACTIONS[p.faction].color}">
-        ${emblem(p.faction, 40)}<div style="min-width:0"><div class="nm">${esc(p.name)}${p.faction === myF ? ' (you)' : ''}</div><div class="sub">${E.FACTIONS[p.faction].name}${p.ai ? ' · AI' : ''}<br>${res} · ${p.hand.length} cards</div></div>
+        ${emblem(p.faction, 40)}<div style="min-width:0"><div class="nm">${esc(p.name)}${p.faction === myF ? ' (you)' : ''}</div><div class="sub wr"><b>${tot - E.supply(st, p.faction)}/${tot}</b> warriors</div><div class="sub">${E.FACTIONS[p.faction].name}${p.ai ? ' · AI' : ''}<br>${res}<br>${p.hand.length} cards</div></div>
         <div class="vp">${p.renown}<small>RENOWN</small></div><div class="bar"><i style="width:${Math.min(100, p.renown / E.WIN * 100)}%"></i></div></div>`;
     }).join('');
   }
