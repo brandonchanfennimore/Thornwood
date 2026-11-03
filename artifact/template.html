@@ -31,7 +31,7 @@
   --badger: #5d6b7a; --parch: #f8ebcd; --parch-ink: #2a1a12;
   --display: "Grandstander", "Alegreya", Georgia, serif; color-scheme: light;
 }
-:root[data-style="art"] body { background: radial-gradient(ellipse at 20% 0%, #f6e7c5, transparent 60%), radial-gradient(ellipse at 90% 100%, #e6cfa4, transparent 55%), var(--bg); }
+:root[data-style="art"] body { min-height: 100vh; background: radial-gradient(ellipse at 20% 0%, #f6e7c5, transparent 60%), radial-gradient(ellipse at 90% 100%, #e6cfa4, transparent 55%), var(--bg); }
 :root[data-style="art"] .panel, :root[data-style="art"] .pchip, :root[data-style="art"] .fac, :root[data-style="art"] .box, :root[data-style="art"] .seat { border: 2px solid var(--line); box-shadow: 3px 3px 0 var(--line); }
 :root[data-style="art"] button:not(.ghost):not(.brand):not(.tdot) { border: 2px solid var(--line); box-shadow: 2px 2px 0 var(--line); }
 :root[data-style="art"] button:not(.ghost):not(.brand):not(.tdot):active { transform: translate(2px, 2px); box-shadow: none; }
@@ -402,6 +402,7 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
       <div class="box"><label for="nameIn">Your name <input id="nameIn" maxlength="20" placeholder="e.g. Hazel"></label></div>
       <div class="box">
         <div class="eyebrow">Play solo against AI</div>
+        <div class="row"><button id="soloBtn" class="primary">Start solo game</button></div>
         <div class="row">
           <label for="soloFaction">Your faction
             <select id="soloFaction"><option value="badger">Badger Clans</option><option value="rabbit">Rabbit Warrens</option><option value="owl">Owl Parliament</option><option value="otter">Otter Company</option></select>
@@ -412,7 +413,6 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
           <label for="soloLevel">AI difficulty
             <select id="soloLevel"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select>
           </label>
-          <button id="soloBtn" class="primary">Start solo game</button>
         </div>
       </div>
       <div class="box" id="onlineBox" hidden>
