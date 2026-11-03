@@ -1,7 +1,7 @@
 <title>Thornwood</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700;800&family=Grandstander:wght@600;800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* Layout: a tabletop. The player track runs down the left, the illustrated map fills the middle with a turn guide on the right, and your hand sits in a dock right below the map. */
 :root {
@@ -24,6 +24,19 @@
   --accent: #84c4a3; --accent-ink: #0f1510; --err: #ef8a77; --gold: #f0c04a;
   --badger: #a9b1bd; color-scheme: dark;
 }
+/* Artistic style: an autumn storybook look with warm paper, brown ink outlines and offset shadows. It is always light. */
+:root[data-style="art"] {
+  --bg: #efe1c1; --panel: #fbf1db; --ink: #2a1a12; --muted: #6e5643; --line: #3b2418;
+  --accent: #b4521f; --accent-ink: #fff6e3; --err: #a3392b; --gold: #d99a1c;
+  --badger: #5d6b7a; --parch: #f8ebcd; --parch-ink: #2a1a12;
+  --display: "Grandstander", "Alegreya", Georgia, serif; color-scheme: light;
+}
+:root[data-style="art"] body { background: radial-gradient(ellipse at 20% 0%, #f6e7c5, transparent 60%), radial-gradient(ellipse at 90% 100%, #e6cfa4, transparent 55%), var(--bg); }
+:root[data-style="art"] .panel, :root[data-style="art"] .pchip, :root[data-style="art"] .fac, :root[data-style="art"] .box, :root[data-style="art"] .seat { border: 2px solid var(--line); box-shadow: 3px 3px 0 var(--line); }
+:root[data-style="art"] button:not(.ghost):not(.brand):not(.tdot) { border: 2px solid var(--line); box-shadow: 2px 2px 0 var(--line); }
+:root[data-style="art"] button:not(.ghost):not(.brand):not(.tdot):active { transform: translate(2px, 2px); box-shadow: none; }
+:root[data-style="art"] #map { background: #9cc4ae; box-shadow: 0 0 0 3px var(--line), 4px 4px 0 3px var(--line); }
+:root[data-style="art"] .plate { font-family: var(--display); font-weight: 800; }
 * { box-sizing: border-box; }
 body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0; }
 h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
@@ -234,6 +247,63 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
+    <!-- artistic style: hand-drawn wobble for the map, paper grain on top of it -->
+    <filter id="rough" x="-2%" y="-2%" width="104%" height="104%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4"/><feDisplacementMap in="SourceGraphic" scale="5" xChannelSelector="R" yChannelSelector="G"/></filter>
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="9"/><feColorMatrix values="0 0 0 0 .23  0 0 0 0 .14  0 0 0 0 .07  0 0 0 -1.4 .9"/></filter>
+    <!-- artistic style critters: storybook heads with big eyes, wearing a cloak in their faction's color -->
+    <symbol id="a-badger" viewBox="-14 -17 28 32">
+      <ellipse cx="0" cy="12.5" rx="11" ry="2.6" fill="rgba(42,26,18,.35)"/>
+      <g stroke="#2a1a12" stroke-width="1.4" stroke-linejoin="round">
+        <circle cx="-8" cy="-9" r="3.6" fill="#5b544d"/><circle cx="8" cy="-9" r="3.6" fill="#5b544d"/>
+        <circle r="11" fill="#5b544d"/>
+        <path d="M-3.2 -10.8 Q0 -12 3.2 -10.8 L2.6 4 Q0 5.6 -2.6 4Z" fill="#f4ecdc" stroke-width="1"/>
+        <path d="M-10.6 4 Q0 10.5 10.6 4 Q9.6 11 0 11.6 Q-9.6 11 -10.6 4Z" fill="#7d8a9a"/>
+        <circle cx="-5" cy="-2.2" r="3.3" fill="#fff"/><circle cx="5" cy="-2.2" r="3.3" fill="#fff"/>
+      </g>
+      <circle cx="-4.4" cy="-2.8" r="1.6" fill="#2a1a12"/><circle cx="5.6" cy="-2.8" r="1.6" fill="#2a1a12"/>
+      <circle cx="-3.9" cy="-3.4" r=".55" fill="#fff"/><circle cx="6.1" cy="-3.4" r=".55" fill="#fff"/>
+      <ellipse cx="0" cy="2.6" rx="2.2" ry="1.4" fill="#2a1a12"/>
+    </symbol>
+    <symbol id="a-rabbit" viewBox="-14 -21 28 36">
+      <ellipse cx="0" cy="12.5" rx="11" ry="2.6" fill="rgba(42,26,18,.35)"/>
+      <g stroke="#2a1a12" stroke-width="1.4" stroke-linejoin="round">
+        <ellipse cx="-5" cy="-12" rx="3.5" ry="8.4" fill="#efd36a" transform="rotate(-14 -5 -12)"/>
+        <ellipse cx="5" cy="-12" rx="3.5" ry="8.4" fill="#efd36a" transform="rotate(10 5 -12)"/>
+        <ellipse cx="-5" cy="-12" rx="1.3" ry="5.6" fill="#f2a9a0" stroke="none" transform="rotate(-14 -5 -12)"/><ellipse cx="5" cy="-12" rx="1.3" ry="5.6" fill="#f2a9a0" stroke="none" transform="rotate(10 5 -12)"/>
+        <circle r="10.6" fill="#efd36a"/>
+        <path d="M-10.2 4 Q0 10.5 10.2 4 Q9.4 11 0 11.4 Q-9.4 11 -10.2 4Z" fill="#d9772b"/>
+        <circle cx="-4.6" cy="-2.4" r="3.4" fill="#fff"/><circle cx="4.6" cy="-2.4" r="3.4" fill="#fff"/>
+      </g>
+      <circle cx="-4.2" cy="-3.2" r="1.7" fill="#2a1a12"/><circle cx="5" cy="-3.2" r="1.7" fill="#2a1a12"/>
+      <circle cx="-3.7" cy="-3.8" r=".6" fill="#fff"/><circle cx="5.5" cy="-3.8" r=".6" fill="#fff"/>
+      <path d="M-1.6 2 Q0 3.4 1.6 2" fill="none" stroke="#2a1a12" stroke-width="1" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="a-owl" viewBox="-14 -18 28 33">
+      <ellipse cx="0" cy="12.5" rx="11" ry="2.6" fill="rgba(42,26,18,.35)"/>
+      <g stroke="#2a1a12" stroke-width="1.4" stroke-linejoin="round">
+        <path d="M-10 -5 L-10 -16 L-4 -10Z M10 -5 L10 -16 L4 -10Z" fill="#b8481f"/>
+        <circle r="11" fill="#d9692c"/>
+        <path d="M-10.6 4 Q0 10.5 10.6 4 Q9.6 11 0 11.6 Q-9.6 11 -10.6 4Z" fill="#7a58a8"/>
+        <circle cx="-4.8" cy="-2.2" r="4.3" fill="#fff6e0"/><circle cx="4.8" cy="-2.2" r="4.3" fill="#fff6e0"/>
+        <path d="M-2.2 1.6 L2.2 1.6 L0 6.4Z" fill="#f2bf34" stroke-width="1"/>
+      </g>
+      <circle cx="-4.6" cy="-2.6" r="2" fill="#2a1a12"/><circle cx="5" cy="-2.6" r="2" fill="#2a1a12"/>
+      <circle cx="-4" cy="-3.2" r=".7" fill="#fff"/><circle cx="5.6" cy="-3.2" r=".7" fill="#fff"/>
+    </symbol>
+    <symbol id="a-otter" viewBox="-14 -16 28 31">
+      <ellipse cx="0" cy="12.5" rx="11" ry="2.6" fill="rgba(42,26,18,.35)"/>
+      <g stroke="#2a1a12" stroke-width="1.4" stroke-linejoin="round">
+        <circle cx="-8.4" cy="-7.4" r="2.8" fill="#8a5a38"/><circle cx="8.4" cy="-7.4" r="2.8" fill="#8a5a38"/>
+        <circle r="11" fill="#8a5a38"/>
+        <ellipse cx="0" cy="2.4" rx="6.2" ry="4.2" fill="#f1dcc0" stroke-width="1"/>
+        <path d="M-10.6 4.6 Q0 10.8 10.6 4.6 Q9.6 11 0 11.6 Q-9.6 11 -10.6 4.6Z" fill="#2f7fb5"/>
+        <circle cx="-4.6" cy="-3.4" r="3" fill="#fff"/><circle cx="4.6" cy="-3.4" r="3" fill="#fff"/>
+      </g>
+      <circle cx="-4.2" cy="-4" r="1.5" fill="#2a1a12"/><circle cx="5" cy="-4" r="1.5" fill="#2a1a12"/>
+      <circle cx="-3.8" cy="-4.5" r=".5" fill="#fff"/><circle cx="5.4" cy="-4.5" r=".5" fill="#fff"/>
+      <ellipse cx="0" cy="0.8" rx="2" ry="1.3" fill="#2a1a12"/>
+      <path d="M-2.5 2.4 L-8 1.6 M-2.5 3.4 L-8 4.2 M2.5 2.4 L8 1.6 M2.5 3.4 L8 4.2" stroke="#2a1a12" stroke-width=".6"/>
+    </symbol>
     <!-- faction pieces: wooden discs with animal faces -->
     <symbol id="m-badger" viewBox="-14 -17 28 32">
       <ellipse cx="0" cy="12" rx="11" ry="3" fill="rgba(0,0,0,.35)"/>
@@ -313,7 +383,7 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
 
 <header class="top">
   <button class="brand" id="homeLink" aria-label="Thornwood home">Thornwood</button>
-  <div class="top-r"><span id="roomTag" class="tag" hidden></span><button class="ghost" id="rulesBtn">How to play</button></div>
+  <div class="top-r"><span id="roomTag" class="tag" hidden></span><button class="ghost" id="styleBtn" aria-label="Switch art style"></button><button class="ghost" id="rulesBtn">How to play</button></div>
 </header>
 
 <main id="home">

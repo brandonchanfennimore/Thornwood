@@ -13,7 +13,10 @@
   const AI_NAMES = { badger: 'Old Brock', rabbit: 'Clover', owl: 'Hootsworth', otter: 'Captain Slick' };
   const VB = { badger: '-14 -17 28 32', rabbit: '-14 -21 28 36', owl: '-14 -18 28 33', otter: '-14 -16 28 31' };
   const PIECE_H = { badger: 32, rabbit: 36, owl: 33, otter: 31 };
-  const emblem = (f, size = 40) => `<svg width="${size}" height="${size}" aria-hidden="true"><use href="#m-${f}" width="100%" height="100%"/></svg>`;
+  // art style: 'simple' (wooden discs, flat map) or 'art' (storybook critters, inked autumn map); symbols are #m-* or #a-*
+  let style = ls.get('tw-style') === 'art' ? 'art' : 'simple';
+  const mk = () => style === 'art' ? 'a' : 'm';
+  const emblem = (f, size = 40) => `<svg width="${size}" height="${size}" aria-hidden="true"><use href="#${mk()}-${f}" width="100%" height="100%"/></svg>`;
   const R = E.REGIONS;
 
   // ---------- state ----------
@@ -32,7 +35,13 @@
     $('onlineBox').hidden = !db; $('offlineNote').hidden = !!db;
     if (db && /^#[A-Z]{4}$/i.test(location.hash) && !mode) joinRoom(location.hash.slice(1).toUpperCase());
   })();
-  drawTerrain();
+  function applyStyle() {
+    document.documentElement.dataset.style = style;
+    $('styleBtn').textContent = style === 'art' ? 'Simple style' : 'Artistic style';
+    document.querySelectorAll('use').forEach(u => { const h = u.getAttribute('href'); if (/^#[ma]-/.test(h)) u.setAttribute('href', '#' + mk() + h.slice(2)); });
+    drawTerrain();
+  }
+  $('styleBtn').onclick = () => { style = style === 'art' ? 'simple' : 'art'; ls.set('tw-style', style); applyStyle(); };
   document.querySelectorAll('#speed button').forEach(b => {
     b.classList.toggle('on', +b.dataset.s === speed);
     b.onclick = () => { speed = +b.dataset.s; ls.set('tw-speed', speed); document.querySelectorAll('#speed button').forEach(x => x.classList.toggle('on', x === b)); };
@@ -442,10 +451,26 @@
   function rng(seed) { return () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }; }
   function segDist(px, py, ax, ay, bx, by) { const dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy))); return Math.hypot(px - (ax + t * dx), py - (ay + t * dy)); }
   function curve(a, b, bend) { const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy); return `M${a.x} ${a.y} Q${mx - dy / L * bend} ${my + dx / L * bend} ${b.x} ${b.y}`; }
+  const PALETTE = {
+    simple: {
+      bg: '#4f6e47', blobs: ['#47643f', '#58784e'], trees: ['#2d5531', '#376640', '#284b2b', '#41743f', '#31603a'], treeHi: 'rgba(255,255,255,.1)', ink: null,
+      pathOut: '#7f6a45', pathIn: '#cdb487', pathDash: '#b39a6c', riverOut: '#2d5e84', riverIn: '#4f97cc', riverHi: '#a9d5f0',
+      fill: { meadow: '#e6d38c', marsh: '#a3cdb9', grove: '#b4d090' }, edge: { meadow: '#b9a35a', marsh: '#6fa392', grove: '#7fa35f' },
+      flower: ['#fff7e0', '#e98a9b'], reed: '#3f7a5a', pond: '#5f9fbf', bush: '#5f8f45', plate: '#f3ead2', plateEdge: '#8b7650',
+    },
+    // autumn storybook: mint forest floor, orange and rust canopies, everything outlined in brown ink
+    art: {
+      bg: '#9cc4ae', blobs: ['#8db8a2', '#aed0bd'], trees: ['#e8963a', '#d9772b', '#c4582a', '#eab04a', '#b8481f'], treeHi: 'rgba(255,236,190,.35)', ink: '#3b2418',
+      pathOut: '#3b2418', pathIn: '#efd49a', pathDash: '#c9a45e', riverOut: '#2a3a40', riverIn: '#5f9fb0', riverHi: '#d3ece6',
+      fill: { meadow: '#f2d98e', marsh: '#bcdcc8', grove: '#d3dc9c' }, edge: { meadow: '#3b2418', marsh: '#3b2418', grove: '#3b2418' },
+      flower: ['#fff6e0', '#e5704f'], reed: '#3b2418', pond: '#3f7f94', bush: '#c4582a', plate: '#f8ebcd', plateEdge: '#3b2418',
+    },
+  };
   function drawTerrain() {
-    const rand = rng(7331); let h = '';
-    h += `<rect x="-10" y="-14" width="1020" height="790" fill="#4f6e47"/>`;
-    for (let i = 0; i < 70; i++) h += `<ellipse cx="${rand() * 1000}" cy="${rand() * 770}" rx="${30 + rand() * 60}" ry="${20 + rand() * 40}" fill="${rand() < .5 ? '#47643f' : '#58784e'}" opacity=".6"/>`;
+    const rand = rng(7331), P = PALETTE[style], ink = P.ink ? ` stroke="${P.ink}" stroke-width="2"` : '';
+    let h = '';
+    h += `<rect x="-10" y="-14" width="1020" height="790" fill="${P.bg}"/>`;
+    for (let i = 0; i < 70; i++) h += `<ellipse cx="${rand() * 1000}" cy="${rand() * 770}" rx="${30 + rand() * 60}" ry="${20 + rand() * 40}" fill="${rand() < .5 ? P.blobs[0] : P.blobs[1]}" opacity=".6"/>`;
     const segs = [];
     // river: a trunk from the north edge to the south edge, with two tributaries
     const top = { x: 330, y: -14 }, bot = { x: 470, y: 780 };
@@ -459,37 +484,39 @@
       if (R.some(c => Math.hypot(c.x - x, c.y - y) < 100)) continue;
       if (segs.some(([a, b, w]) => segDist(x, y, a.x, a.y, b.x, b.y) < w)) continue;
       if (rand() < .18) continue;
-      trees.push({ x, y, r: 12 + rand() * 9, c: ['#2d5531', '#376640', '#284b2b', '#41743f', '#31603a'][Math.floor(rand() * 5)] });
+      trees.push({ x, y, r: 12 + rand() * 9, c: P.trees[Math.floor(rand() * 5)] });
     }
     trees.sort((a, b) => a.y - b.y);
-    const treeSvg = trees.map(t => `<circle cx="${t.x + 3}" cy="${t.y + 5}" r="${t.r}" fill="rgba(0,0,0,.28)"/><circle cx="${t.x}" cy="${t.y}" r="${t.r}" fill="${t.c}"/><circle cx="${t.x - t.r / 3}" cy="${t.y - t.r / 3}" r="${t.r / 2.2}" fill="rgba(255,255,255,.1)"/>`).join('');
+    const treeSvg = trees.map(t => `<circle cx="${t.x + 3}" cy="${t.y + 5}" r="${t.r}" fill="rgba(0,0,0,.28)"/><circle cx="${t.x}" cy="${t.y}" r="${t.r}" fill="${t.c}"${ink}/><circle cx="${t.x - t.r / 3}" cy="${t.y - t.r / 3}" r="${t.r / 2.2}" fill="${P.treeHi}"/>` +
+      (P.ink ? `<path d="M${t.x + t.r * .1} ${t.y + t.r * .55} q${t.r * .3} -${t.r * .15} ${t.r * .5} -${t.r * .5}" stroke="${P.ink}" stroke-width="1.4" fill="none" stroke-linecap="round"/>` : '')).join('');
     // paths
     E.EDGES.forEach(([a, b], i) => {
       if (E.isRiver(a, b)) return;
       const d = curve(R[a], R[b], (i % 2 ? 1 : -1) * 14);
-      h += `<path d="${d}" stroke="#7f6a45" stroke-width="20" fill="none" stroke-linecap="round"/><path d="${d}" stroke="#cdb487" stroke-width="13" fill="none" stroke-linecap="round"/><path d="${d}" stroke="#b39a6c" stroke-width="2" stroke-dasharray="3 10" fill="none" stroke-linecap="round"/>`;
+      h += `<path d="${d}" stroke="${P.pathOut}" stroke-width="20" fill="none" stroke-linecap="round"/><path d="${d}" stroke="${P.pathIn}" stroke-width="${P.ink ? 15 : 13}" fill="none" stroke-linecap="round"/><path d="${d}" stroke="${P.pathDash}" stroke-width="2" stroke-dasharray="3 10" fill="none" stroke-linecap="round"/>`;
     });
-    riverPaths.forEach(([a, b], i) => { const d = curve(a, b, (i % 2 ? 1 : -1) * 22); h += `<path d="${d}" stroke="#2d5e84" stroke-width="32" fill="none" stroke-linecap="round"/>`; });
-    riverPaths.forEach(([a, b], i) => { const d = curve(a, b, (i % 2 ? 1 : -1) * 22); h += `<path d="${d}" stroke="#4f97cc" stroke-width="24" fill="none" stroke-linecap="round"/><path d="${d}" stroke="#a9d5f0" stroke-width="2.5" stroke-dasharray="14 18" fill="none" stroke-linecap="round" opacity=".8"/>`; });
+    riverPaths.forEach(([a, b], i) => { const d = curve(a, b, (i % 2 ? 1 : -1) * 22); h += `<path d="${d}" stroke="${P.riverOut}" stroke-width="32" fill="none" stroke-linecap="round"/>`; });
+    riverPaths.forEach(([a, b], i) => { const d = curve(a, b, (i % 2 ? 1 : -1) * 22); h += `<path d="${d}" stroke="${P.riverIn}" stroke-width="${P.ink ? 27 : 24}" fill="none" stroke-linecap="round"/><path d="${d}" stroke="${P.riverHi}" stroke-width="2.5" stroke-dasharray="14 18" fill="none" stroke-linecap="round" opacity=".8"/>`; });
     h += treeSvg;
     // clearings
-    const FILL = { meadow: '#e6d38c', marsh: '#a3cdb9', grove: '#b4d090' };
-    const EDGE = { meadow: '#b9a35a', marsh: '#6fa392', grove: '#7fa35f' };
     R.forEach((c, i) => {
-      h += `<circle cx="${c.x + 3}" cy="${c.y + 6}" r="76" fill="rgba(0,0,0,.3)"/><circle cx="${c.x}" cy="${c.y}" r="74" fill="${EDGE[c.terrain]}"/><circle cx="${c.x}" cy="${c.y}" r="69" fill="${FILL[c.terrain]}"/>`;
+      h += `<circle cx="${c.x + 3}" cy="${c.y + 6}" r="76" fill="rgba(0,0,0,.3)"/><circle cx="${c.x}" cy="${c.y}" r="74" fill="${P.edge[c.terrain]}"/><circle cx="${c.x}" cy="${c.y}" r="${P.ink ? 71 : 69}" fill="${P.fill[c.terrain]}"/>`;
       for (let k = 0; k < 16; k++) {
         const ang = rand() * Math.PI * 2; if (ang > 1.1 && ang < 2.05) continue; // keep the name plate area clear
         const rr = 57 + rand() * 8, x = c.x + Math.cos(ang) * rr, y = c.y + Math.sin(ang) * rr;
-        if (c.terrain === 'meadow') h += `<circle cx="${x}" cy="${y}" r="2.6" fill="${rand() < .5 ? '#fff7e0' : '#e98a9b'}"/><circle cx="${x}" cy="${y}" r="1" fill="#d99a1a"/>`;
-        if (c.terrain === 'marsh') h += rand() < .5 ? `<path d="M${x} ${y + 5} l0 -10 M${x + 3} ${y + 5} l1 -8" stroke="#3f7a5a" stroke-width="1.6"/><ellipse cx="${x}" cy="${y - 6}" rx="1.4" ry="3" fill="#7a5a33"/>` : `<ellipse cx="${x}" cy="${y}" rx="6" ry="2.2" fill="none" stroke="#5f9fbf" stroke-width="1.2"/>`;
-        if (c.terrain === 'grove') h += `<circle cx="${x}" cy="${y}" r="${4 + rand() * 2}" fill="#5f8f45"/><circle cx="${x - 1}" cy="${y - 1}" r="2" fill="rgba(255,255,255,.15)"/>`;
+        if (c.terrain === 'meadow') h += `<circle cx="${x}" cy="${y}" r="2.6" fill="${rand() < .5 ? P.flower[0] : P.flower[1]}"${P.ink ? ` stroke="${P.ink}" stroke-width=".8"` : ''}/><circle cx="${x}" cy="${y}" r="1" fill="#d99a1a"/>`;
+        if (c.terrain === 'marsh') h += rand() < .5 ? `<path d="M${x} ${y + 5} l0 -10 M${x + 3} ${y + 5} l1 -8" stroke="${P.reed}" stroke-width="1.6"/><ellipse cx="${x}" cy="${y - 6}" rx="1.4" ry="3" fill="#7a5a33"/>` : `<ellipse cx="${x}" cy="${y}" rx="6" ry="2.2" fill="none" stroke="${P.pond}" stroke-width="1.2"/>`;
+        if (c.terrain === 'grove') h += `<circle cx="${x}" cy="${y}" r="${4 + rand() * 2}" fill="${P.bush}"${P.ink ? ` stroke="${P.ink}" stroke-width="1"` : ''}/><circle cx="${x - 1}" cy="${y - 1}" r="2" fill="rgba(255,255,255,.15)"/>`;
       }
       const w = c.name.length * 9.5 + 44;
-      h += `<g transform="translate(${c.x},${c.y + 84})"><rect x="${-w / 2}" y="-15" width="${w}" height="28" rx="7" fill="#f3ead2" stroke="#8b7650" stroke-width="1.5"/>
+      h += `<g transform="translate(${c.x},${c.y + 84})"><rect x="${-w / 2}" y="-15" width="${w}" height="28" rx="7" fill="${P.plate}" stroke="${P.plateEdge}" stroke-width="${P.ink ? 2 : 1.5}"/>
         <use href="#t-${c.terrain}" x="${-w / 2 + 5}" y="-10" width="19" height="19"/><text class="plate" x="12" y="5" text-anchor="middle">${c.name}</text></g>`;
     });
+    // art style: wobble every line like it was inked by hand, then lay paper grain over the map
+    if (P.ink) h = `<g filter="url(#rough)">${h}</g><rect x="-10" y="-14" width="1020" height="790" filter="url(#grain)" opacity=".3" pointer-events="none"/>`;
     $('terrainLayer').innerHTML = h;
   }
+  applyStyle();
 
   // ---------- map: dynamic layers ----------
   const ROWS = [{ y: -6, n: 6 }, { y: 18, n: 6 }, { y: 42, n: 4 }];
@@ -510,7 +537,7 @@
   function pieceEl(f, x, y, cls = '') {
     const g = document.createElementNS(NS, 'g'); g.setAttribute('class', 'piece ' + cls);
     const h = PIECE_H[f] * 0.9;
-    g.innerHTML = `<use href="#m-${f}" x="${x - 13}" y="${y - h / 2 - 4}" width="26" height="${h}"/>`;
+    g.innerHTML = `<use href="#${mk()}-${f}" x="${x - 13}" y="${y - h / 2 - 4}" width="26" height="${h}"/>`;
     return g;
   }
   function renderBoard(opts = {}) {
