@@ -3,7 +3,17 @@
 An original strategy board game for 2 to 4 players that you play in the browser. Four woodland factions fight over a forest, and each one plays by its own rules. Play solo against AI opponents, or create a room and invite friends to play online.
 
 <!-- Live site: add your Vercel link here -->
-<!-- ![Thornwood game board](docs/board.png) -->
+![Thornwood game board in the Artistic style](docs/screenshots/game-art.png)
+
+## Screenshots
+
+Choose a visual style from the menu in the top bar. The game remembers your choice.
+
+| Simple | Artistic | 3D |
+| --- | --- | --- |
+| ![Simple style](docs/screenshots/game-simple.png) | ![Artistic style](docs/screenshots/game-art.png) | ![3D style](docs/screenshots/game-3d.png) |
+
+![Home page: pick your faction, number of players and AI difficulty, or start an online game](docs/screenshots/home.png)
 
 ## Features
 
@@ -12,7 +22,7 @@ An original strategy board game for 2 to 4 players that you play in the browser.
 - **Online multiplayer:** create a room, share the 4-letter code or invite link, and friends join from their own browsers
 - **Mix humans and AI:** in an online game, any empty seat can be an AI player
 - **Animated turns:** every move by the AI or other players plays out on the map, at Slow, Normal, or Fast speed
-- **Two art styles:** a clean Simple style, or an Artistic autumn storybook style with hand-inked lines and critter art
+- **Three visual styles:** a clean Simple style, an Artistic autumn storybook style with hand-inked lines and critter art, or a 3D tabletop with toy critters and buildings
 - **Built-in tutorial:** a step-by-step guide covers the rules, each faction, and how to take a turn
 - **Light and dark mode** in the Simple style
 
@@ -49,6 +59,7 @@ Thornwood is written in plain JavaScript with no frameworks and no npm packages.
 - **Online play:** each game is one document in Firebase Firestore, keyed by its room code. All players listen for live updates, and players sign in anonymously behind the scenes, so nobody needs an account.
 - **Fair seating:** when two people join at the same moment, a Firestore transaction gives each seat a short lease so they can't both take the same one.
 - **Security rules (`firestore.rules`):** only signed-in visitors can read or write games, and only at valid 4-letter room codes.
+- **3D view:** the 3D style draws the board with [three.js](https://threejs.org), loaded from cdnjs only when someone picks it. It follows the same game state as the 2D map, and you click clearings in 3D just as you would on the map. If three.js can't load, the game falls back to the Artistic style.
 - **One source, two builds:** `artifact/build.js` combines the engine, AI, and interface into a single HTML page, then outputs a version for the website and a version that runs on claude.ai.
 
 ## Run It Locally
@@ -84,7 +95,7 @@ public/
   index.html, client.js, style.css   Older self-hosted version
 artifact/
   template.html       Page layout and styles
-  app.js              Game interface: map, hand, panels, tutorial
+  app.js              Game interface: map, 3D view, hand, panels, tutorial
   build.js            Builds web/index.html and the claude.ai version
 web/
   index.html          Built website version (deploy this folder)
@@ -92,6 +103,8 @@ web/
 web-src/
   firebase-shim.js    Connects the website version to Firebase
 firestore.rules       Database security rules
+3d/                   Blender model of the board, with renders
+docs/screenshots/     Images used in this README
 server.js             Older self-hosted Node server (npm start)
 ```
 
