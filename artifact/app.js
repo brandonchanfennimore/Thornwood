@@ -13,9 +13,10 @@
   const AI_NAMES = { badger: 'Old Brock', rabbit: 'Clover', owl: 'Hootsworth', otter: 'Captain Slick' };
   const VB = { badger: '-14 -17 28 32', rabbit: '-14 -21 28 36', owl: '-14 -18 28 33', otter: '-14 -16 28 31' };
   const PIECE_H = { badger: 32, rabbit: 36, owl: 33, otter: 31 };
-  // art style: 'simple' (wooden discs, flat map) or 'art' (storybook critters, inked autumn map); symbols are #m-* or #a-*
-  let style = ls.get('tw-style') === 'art' ? 'art' : 'simple';
-  const mk = () => style === 'art' ? 'a' : 'm';
+  // visual style: 'simple' (wooden discs, flat map), 'art' (storybook critters, inked autumn map) or '3d' (artistic page with a
+  // three.js board); symbols are #m-* (simple) or #a-* (art and 3d)
+  let style = ['art', '3d'].includes(ls.get('tw-style')) ? ls.get('tw-style') : 'simple';
+  const mk = () => style === 'simple' ? 'm' : 'a';
   const emblem = (f, size = 40) => `<svg width="${size}" height="${size}" aria-hidden="true"><use href="#${mk()}-${f}" width="100%" height="100%"/></svg>`;
   const R = E.REGIONS;
 
@@ -36,12 +37,12 @@
     if (db && /^#[A-Z]{4}$/i.test(location.hash) && !mode) joinRoom(location.hash.slice(1).toUpperCase());
   })();
   function applyStyle() {
-    document.documentElement.dataset.style = style;
-    $('styleBtn').textContent = style === 'art' ? 'Simple style' : 'Artistic style';
+    document.documentElement.dataset.style = style === 'simple' ? 'simple' : 'art';
+    $('styleSel').value = style;
     document.querySelectorAll('use').forEach(u => { const h = u.getAttribute('href'); if (/^#[ma]-/.test(h)) u.setAttribute('href', '#' + mk() + h.slice(2)); });
-    drawTerrain();
+    drawTerrain(); set3D(style === '3d');
   }
-  $('styleBtn').onclick = () => { style = style === 'art' ? 'simple' : 'art'; ls.set('tw-style', style); applyStyle(); };
+  $('styleSel').onchange = () => { style = $('styleSel').value; ls.set('tw-style', style); applyStyle(); };
   document.querySelectorAll('#speed button').forEach(b => {
     b.classList.toggle('on', +b.dataset.s === speed);
     b.onclick = () => { speed = +b.dataset.s; ls.set('tw-speed', speed); document.querySelectorAll('#speed button').forEach(x => x.classList.toggle('on', x === b)); };
@@ -390,7 +391,7 @@
       if (d > 0) { const chip = document.querySelector(`.pchip[data-f="${p.faction}"]`); if (chip) { const s = document.createElement('span'); s.className = 'float'; s.textContent = '+' + d; chip.appendChild(s); setTimeout(() => s.remove(), 1700); } }
     });
   }
-  function flash(r) { const g = document.querySelector(`.clr[data-r="${r}"]`); if (g) { g.classList.add('flash'); setTimeout(() => g.classList.remove('flash'), 1600); } }
+  function flash(r) { if (T3.on) T3.flash[r] = performance.now(); const g = document.querySelector(`.clr[data-r="${r}"]`); if (g) { g.classList.add('flash'); setTimeout(() => g.classList.remove('flash'), 1600); } }
 
   async function flyPieces(prev, next, f, from, to, n, T) {
     const a = tokenLayout(prev, from).filter(t => t.f === f).slice(-n);
@@ -467,7 +468,7 @@
     },
   };
   function drawTerrain() {
-    const rand = rng(7331), P = PALETTE[style], ink = P.ink ? ` stroke="${P.ink}" stroke-width="2"` : '';
+    const rand = rng(7331), P = PALETTE[style === 'simple' ? 'simple' : 'art'], ink = P.ink ? ` stroke="${P.ink}" stroke-width="2"` : '';
     let h = '';
     h += `<rect x="-10" y="-14" width="1020" height="790" fill="${P.bg}"/>`;
     for (let i = 0; i < 70; i++) h += `<ellipse cx="${rand() * 1000}" cy="${rand() * 770}" rx="${30 + rand() * 60}" ry="${20 + rand() * 40}" fill="${rand() < .5 ? P.blobs[0] : P.blobs[1]}" opacity=".6"/>`;
@@ -515,6 +516,192 @@
     // art style: wobble every line like it was inked by hand, then lay paper grain over the map
     if (P.ink) h = `<g filter="url(#rough)">${h}</g><rect x="-10" y="-14" width="1020" height="790" filter="url(#grain)" opacity=".3" pointer-events="none"/>`;
     $('terrainLayer').innerHTML = h;
+  }
+  // ---------- map: 3D view ----------
+  // A three.js tabletop built from the same recipes as the Blender model in 3d/. It mirrors the game state on every board
+  // render; the SVG map stays in the page (hidden) so playback timing and the 2D view keep working unchanged.
+  const T3 = { on: false, ready: null, scene: null, pieces: new Map(), flash: {}, rings: [], dests: [] };
+  const THREE_URL = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  function set3D(on) {
+    T3.on = on;
+    $('map').style.display = on ? 'none' : '';
+    const cv = $('map3d'); if (cv) cv.style.display = on ? '' : 'none';
+    if (!on) return;
+    T3.ready = T3.ready || new Promise((ok, no) => { const s = document.createElement('script'); s.src = THREE_URL; s.onload = ok; s.onerror = no; document.head.appendChild(s); })
+      .then(() => document.fonts.ready).then(init3D);
+    T3.ready.then(() => { if (T3.on && shown) renderBoard(); })
+      .catch(e => { console.error(e); T3.ready = null; toast('The 3D view could not load. Showing the artistic style instead.'); style = 'art'; ls.set('tw-style', style); applyStyle(); });
+  }
+  const V3 = (x, y, h = 0) => new THREE.Vector3((x - 500) * .01, h, (y - 390) * .01);
+  function init3D() {
+    const cv = document.createElement('canvas'); cv.id = 'map3d'; cv.tabIndex = 0; cv.setAttribute('aria-label', 'Forest map in 3D');
+    $('map').after(cv);
+    const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
+    renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    const scene = new THREE.Scene(); scene.background = new THREE.Color('#e9dcc0');
+    const camera = new THREE.PerspectiveCamera(36, 1020 / 790, 0.1, 100);
+    camera.position.set(0, 9.7, 8.0); camera.lookAt(0, 0, 0.5);
+    scene.add(new THREE.HemisphereLight('#fff4e0', '#7a6d5c', 0.58));
+    const sun = new THREE.DirectionalLight('#fff0d8', 0.62); sun.position.set(-5, 10, 6); sun.castShadow = true;
+    Object.assign(sun.shadow.camera, { left: -7, right: 7, top: 6, bottom: -6, near: 1, far: 30 }); sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0008;
+    scene.add(sun);
+    const mats = {}, M = (c, toon) => mats[c + toon] || (mats[c + toon] = toon ? new THREE.MeshToonMaterial({ color: c }) : new THREE.MeshLambertMaterial({ color: c }));
+    const mesh = (geo, color, pos, opts = {}) => {
+      const m = new THREE.Mesh(geo, M(color, opts.toon)); if (pos) m.position.copy(pos);
+      if (opts.scale) m.scale.set(...opts.scale); if (opts.rot) m.rotation.set(...opts.rot);
+      m.castShadow = opts.cast !== false; m.receiveShadow = true; return m;
+    };
+    const board = new THREE.Group(); scene.add(board);
+    board.add(mesh(new THREE.BoxGeometry(10.8, 0.3, 8.5), '#7a5232', new THREE.Vector3(0, -0.16, 0)));
+    board.add(mesh(new THREE.BoxGeometry(10.4, 0.02, 8.1), '#9cc4ae', new THREE.Vector3(0, -0.01, 0), { cast: false }));
+    const TER = { meadow: '#f2d98e', marsh: '#bcdcc8', grove: '#d3dc9c' }, tops = [];
+    R.forEach((c, i) => {
+      board.add(mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.08, 64), '#3b2418', V3(c.x, c.y, 0.04)));
+      const t = mesh(new THREE.CylinderGeometry(0.71, 0.71, 0.1, 64), TER[c.terrain], V3(c.x, c.y, 0.05)); t.userData.r = i; tops.push(t); board.add(t);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.03, 8, 64), new THREE.MeshBasicMaterial({ color: '#ffe27a', transparent: true }));
+      ring.rotation.x = -Math.PI / 2; ring.position.copy(V3(c.x, c.y, 0.11)); ring.visible = false; board.add(ring); T3.rings.push(ring);
+    });
+    // paths and river: flattened tubes along the same bends as the 2D map
+    const tube = (a, b, bend, r, h, color) => {
+      const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy), mx = (a.x + b.x) / 2 - dy / L * bend, my = (a.y + b.y) / 2 + dx / L * bend;
+      const m = mesh(new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(V3(a.x, a.y), V3(mx, my), V3(b.x, b.y)), 24, r, 8), color, null, { cast: false });
+      m.scale.y = 0.12; m.position.y = h; board.add(m);
+    };
+    E.EDGES.forEach(([a, b], i) => { if (!E.isRiver(a, b)) tube(R[a], R[b], (i % 2 ? 1 : -1) * 14, 0.1, 0.004, '#efd49a'); });
+    const riverPaths = [[{ x: 330, y: -14 }, R[1]], ...E.RIVER.map(([a, b]) => [R[a], R[b]]), [R[12], { x: 470, y: 776 }]];
+    riverPaths.forEach(([a, b], i) => { tube(a, b, (i % 2 ? 1 : -1) * 22, 0.17, 0.0, '#2a3a40'); tube(a, b, (i % 2 ? 1 : -1) * 22, 0.14, 0.008, '#5f9fb0'); });
+    // name plates with canvas-drawn labels
+    const label = (txt, w, h, font, color = '#2a1a12', bg = null) => {
+      const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
+      if (bg) { g.fillStyle = bg; g.fillRect(0, 0, w, h); }
+      g.font = font; g.fillStyle = color; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, w / 2, h / 2 + 2);
+      const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t;
+    };
+    const plates = R.map(c => {
+      const w = c.name.length * 0.075 + 0.12, p = V3(c.x, c.y + 86, 0.04);
+      board.add(mesh(new THREE.BoxGeometry(w, 0.06, 0.2), '#f8ebcd', p));
+      const top = new THREE.Mesh(new THREE.PlaneGeometry(w, 0.2), new THREE.MeshBasicMaterial({ map: label(c.name, 512, 96, '800 64px Grandstander, Alegreya, serif', '#2a1a12', '#f8ebcd') }));
+      top.rotation.x = -Math.PI / 2; top.position.set(p.x, 0.072, p.z); board.add(top);
+      return { x: p.x, z: p.z, w };
+    });
+    // autumn trees: one instanced canopy mesh and one trunk mesh, placed like the 2D map and kept off the plates
+    const rand = rng(7331), segs = [];
+    riverPaths.forEach(([a, b]) => segs.push([a, b, 34]));
+    E.EDGES.forEach(([a, b]) => { if (!E.isRiver(a, b)) segs.push([R[a], R[b], 24]); });
+    const spots = [];
+    for (let gx = -10; gx < 1010; gx += 30) for (let gy = -14; gy < 776; gy += 30) {
+      const x = gx + rand() * 22, y = gy + rand() * 22;
+      if (R.some(c => Math.hypot(c.x - x, c.y - y) < 100)) continue;
+      if (segs.some(([a, b, w]) => segDist(x, y, a.x, a.y, b.x, b.y) < w)) continue;
+      if (rand() < .18) continue;
+      const v = V3(x, y), r = (12 + rand() * 9) * .01, h = r * (1.4 + rand() * .6), col = Math.floor(rand() * 5);
+      if (plates.some(p => Math.abs(v.x - p.x) < p.w / 2 + .25 && v.z - p.z > -.25 && v.z - p.z < 1)) continue;
+      spots.push({ v, r, h, col });
+    }
+    const LEAF = ['#e8963a', '#d9772b', '#c4582a', '#eab04a', '#b8481f'].map(c => new THREE.Color(c));
+    const canG = new THREE.IcosahedronGeometry(1, 1), trG = new THREE.CylinderGeometry(1, 1, 1, 7);
+    const can = new THREE.InstancedMesh(canG, new THREE.MeshLambertMaterial({ flatShading: true }), spots.length);
+    const tr = new THREE.InstancedMesh(trG, new THREE.MeshLambertMaterial({ color: '#6e6080' }), spots.length);
+    const o = new THREE.Object3D();
+    spots.forEach((s, i) => {
+      o.position.set(s.v.x, s.h / 2, s.v.z); o.scale.set(s.r * .18, s.h, s.r * .18); o.rotation.set(0, 0, 0); o.updateMatrix(); tr.setMatrixAt(i, o.matrix);
+      o.position.set(s.v.x, s.h + s.r * .55, s.v.z); o.scale.set(s.r * 1.15, s.r * .95, s.r * 1.15); o.rotation.y = i; o.updateMatrix(); can.setMatrixAt(i, o.matrix);
+      can.setColorAt(i, LEAF[s.col]);
+    });
+    can.castShadow = tr.castShadow = true; board.add(can, tr);
+    // critters and buildings, as storybook toys (toon shaded). Front faces the camera (+z).
+    const sph = new THREE.SphereGeometry(1, 20, 14), cone = new THREE.ConeGeometry(1, 1, 16), cyl = new THREE.CylinderGeometry(1, 1, 1, 20), box = new THREE.BoxGeometry(1, 1, 1);
+    const P3 = (x, y, z) => new THREE.Vector3(x, y, z);
+    const part = (g, geo, color, pos, scale, rot) => g.add(mesh(geo, color, pos, { toon: true, scale, rot }));
+    const FUR = { badger: '#5b544d', rabbit: '#efd36a', owl: '#d9692c', otter: '#8a5a38' };
+    const CLOAK = { badger: '#6e7c8c', rabbit: '#d9772b', owl: '#7a58a8', otter: '#2f7fb5' };
+    const EYE = { badger: .03, rabbit: .03, owl: .037, otter: .027 };
+    T3.make = { critter(f) {
+      const g = new THREE.Group(), e = EYE[f];
+      g.add(mesh(new THREE.CylinderGeometry(.065, .11, .17, 24), CLOAK[f], P3(0, .085, 0), { toon: true }));
+      part(g, sph, FUR[f], P3(0, .225, 0), [.088, .088, .088]);
+      for (const s of [-1, 1]) { part(g, sph, '#fffaf0', P3(s * .036, .238, .068), [e, e, e]); part(g, sph, '#2a1a12', P3(s * .033, .243, .068 + e * .82), [e * .5, e * .5, e * .5]); }
+      if (f === 'badger') {
+        part(g, sph, '#fffaf0', P3(0, .262, .05), [.024, .05, .045]); part(g, sph, '#2a1a12', P3(0, .205, .088), [.016, .016, .016]);
+        for (const s of [-1, 1]) part(g, sph, FUR[f], P3(s * .062, .292, -.005), [.03, .03, .03]);
+      } else if (f === 'rabbit') {
+        part(g, sph, '#f2a9a0', P3(0, .205, .087), [.012, .012, .012]);
+        for (const s of [-1, 1]) { part(g, sph, FUR[f], P3(s * .035, .35, 0), [.026, .085, .016], [0, 0, -s * .17]); part(g, sph, '#f2a9a0', P3(s * .035, .35, .012), [.012, .065, .008], [0, 0, -s * .17]); }
+      } else if (f === 'owl') {
+        for (const s of [-1, 1]) part(g, cone, '#b8481f', P3(s * .055, .31, 0), [.028, .07, .028], [0, 0, -s * .44]);
+        part(g, cone, '#f2bf34', P3(0, .205, .09), [.018, .045, .018], [1.75, 0, 0]);
+      } else {
+        part(g, sph, '#f1dcc0', P3(0, .2, .068), [.048, .032, .03]); part(g, sph, '#2a1a12', P3(0, .21, .096), [.014, .014, .014]);
+        for (const s of [-1, 1]) part(g, sph, FUR[f], P3(s * .066, .278, 0), [.024, .024, .024]);
+      }
+      return g;
+    }, building(f) {
+      const g = new THREE.Group();
+      const flag = (x, z, h) => { part(g, cyl, '#5a3e28', P3(x, h / 2, z), [.008, h, .008]); part(g, box, CLOAK[f], P3(x + .05, h - .04, z), [.1, .07, .008]); };
+      if (f === 'badger') { part(g, sph, '#8a6a43', P3(0, 0, 0), [.15, .12, .14]); part(g, cyl, '#1e140e', P3(0, .04, .13), [.05, .06, .05], [Math.PI / 2, 0, 0]); flag(.1, -.06, .36); }
+      if (f === 'owl') {
+        part(g, cyl, '#a6794a', P3(0, .06, 0), [.11, .12, .11]); g.add(mesh(new THREE.TorusGeometry(.1, .04, 10, 32), '#785430', P3(0, .14, 0), { toon: true, rot: [Math.PI / 2, 0, 0] }));
+        for (const x of [-.03, .035]) part(g, sph, '#f1dcc0', P3(x, .14, 0), [.03, .038, .03]);
+        flag(.12, -.05, .4);
+      }
+      if (f === 'otter') { part(g, box, '#a6794a', P3(0, .075, 0), [.22, .15, .2]); part(g, cone, CLOAK[f], P3(0, .2, 0), [.18, .12, .18], [0, Math.PI / 4, 0]); part(g, box, '#1e140e', P3(0, .05, .1), [.06, .1, .01]); flag(.13, -.05, .42); }
+      return g;
+    }, flag(f) {
+      const g = new THREE.Group(); part(g, cyl, '#3a2f1c', P3(0, .2, 0), [.012, .4, .012]); part(g, box, E.FACTIONS[f].color, P3(.1, .34, 0), [.2, .12, .01]); return g;
+    }, count(n) {
+      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: label('×' + n, 128, 64, '800 44px Grandstander, Alegreya, sans-serif', '#2a1a12', '#fff6e3') }));
+      s.scale.set(.26, .13, 1); return s;
+    } };
+    // clicks: pick a clearing under the pointer
+    const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
+    const pick = e => { const b = cv.getBoundingClientRect(); ptr.set((e.clientX - b.left) / b.width * 2 - 1, -(e.clientY - b.top) / b.height * 2 + 1); ray.setFromCamera(ptr, camera); const h = ray.intersectObjects(tops)[0]; return h ? h.object.userData.r : null; };
+    cv.addEventListener('click', e => { const r = pick(e); if (r !== null) clickRegion(r, T3.dests); });
+    cv.addEventListener('pointermove', e => { const r = pick(e); cv.style.cursor = r !== null && T3.rings[r].visible ? 'pointer' : 'default'; });
+    new ResizeObserver(() => { const w = cv.clientWidth, h = cv.clientHeight; if (w && h) { renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); } }).observe(cv);
+    Object.assign(T3, { scene, board, renderer, camera, cv });
+    const loop = now => {
+      requestAnimationFrame(loop);
+      if (!T3.on || $('game').hidden) return;
+      for (const [k, p] of T3.pieces) {
+        const t = Math.min(1, (now - p.t0) / 450), s = p.dying ? 1 - t : t < 1 ? 1 + Math.sin(t * Math.PI) * .25 * (1 - t) - (1 - t) * (1 - t) : 1;
+        p.obj.scale.setScalar(Math.max(0.001, s * p.size));
+        if (p.dying && t >= 1) { board.remove(p.obj); T3.pieces.delete(k); }
+      }
+      T3.rings.forEach((g, i) => {
+        const fl = T3.flash[i] && now - T3.flash[i] < 1600;
+        if (fl) { g.visible = true; g.material.color.set('#d99a1c'); }
+        g.material.opacity = g.userData.dest || fl ? .55 + .45 * Math.sin(now / 160) : 1;
+        if (!fl && T3.flash[i]) { delete T3.flash[i]; g.visible = !!g.userData.on; g.material.color.set(g.userData.color || '#ffe27a'); }
+      });
+      renderer.render(scene, camera);
+    };
+    requestAnimationFrame(loop);
+  }
+  function sync3D(st, actR, destR, dests) {
+    T3.dests = dests;
+    T3.rings.forEach((g, i) => {
+      const on = actR.has(i) || destR.has(i) || sel === i;
+      g.userData = { on, dest: destR.has(i), color: sel === i ? '#ffffff' : '#ffe27a' };
+      g.visible = on || !!T3.flash[i]; g.material.color.set(g.userData.color); g.scale.setScalar(destR.has(i) ? 1.03 : 1);
+    });
+    // desired pieces this frame, keyed so unchanged pieces stay put and only new ones pop in
+    const want = new Map(), now = performance.now();
+    R.forEach((c, r) => {
+      st.regions[r].b.forEach((b, k) => want.set(`b-${r}-${k}-${b}`, { make: () => T3.make.building(b), pos: V3(c.x - (c.slots * 34 - 4) / 2 + k * 34 + 15, c.y - 40, .1), size: 1.2 }));
+      for (const t of tokenLayout(st, r)) {
+        want.set(`${t.key}`, { make: () => T3.make.critter(t.f), pos: V3(t.x, t.y + 6, .1), size: 1.25 });
+        if (t.extra) want.set(`n-${t.key}-${t.extra}`, { make: () => T3.make.count(t.extra), pos: V3(t.x + 8, t.y + 6, .6), size: 1.2 });
+      }
+      const rl = E.ruler(st, r); if (rl) want.set(`f-${r}-${rl}`, { make: () => T3.make.flag(rl), pos: V3(c.x + 56, c.y - 62, .1), size: 1 });
+    });
+    for (const [k, p] of T3.pieces) if (!want.has(k) && !p.dying) { p.dying = true; p.t0 = now; }
+    for (const [k, w] of want) {
+      const p = T3.pieces.get(k);
+      if (p && !p.dying) { p.obj.position.copy(w.pos); continue; }
+      if (p) T3.board.remove(p.obj);
+      const obj = w.make(); obj.position.copy(w.pos); obj.rotation.y = (k.length * 7 % 5 - 2) * .06; obj.scale.setScalar(.001);
+      T3.board.add(obj); T3.pieces.set(k, { obj, t0: now, size: w.size });
+    }
   }
   applyStyle();
 
@@ -590,6 +777,7 @@
         layer.appendChild(g);
       }
     });
+    if (T3.on && T3.scene) sync3D(st, actR, destR, dests);
   }
   function clickRegion(r, dests) {
     if (!idle()) return;

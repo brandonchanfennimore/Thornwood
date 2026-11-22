@@ -61,6 +61,10 @@ label { display: flex; flex-direction: column; gap: 4px; font-weight: 500; }
 .brand { font: 800 22px var(--display); color: var(--accent); background: none; border: 0; padding: 0; }
 .top-r { display: flex; gap: 4px; align-items: center; }
 .top-r button { white-space: nowrap; padding-inline: 8px; }
+.style-sel { padding: 5px 8px; font-size: 14px; }
+/* 3D view: a WebGL canvas that takes the map's place and keeps its shape */
+#map3d { width: 100%; aspect-ratio: 1020 / 790; display: block; border-radius: 16px; background: #e9dcc0; cursor: default; touch-action: manipulation; }
+:root[data-style="art"] #map3d { box-shadow: 0 0 0 3px var(--line), 4px 4px 0 3px var(--line); }
 
 /* home + lobby */
 .home { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 32px; max-width: 1080px; margin: 24px auto 40px; align-items: start; }
@@ -388,7 +392,7 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
 
 <header class="top">
   <button class="brand" id="homeLink" aria-label="Thornwood home">Thornwood</button>
-  <div class="top-r"><span id="roomTag" class="tag" hidden></span><button class="ghost" id="styleBtn" aria-label="Switch art style"></button><button class="ghost" id="rulesBtn">How to play</button></div>
+  <div class="top-r"><span id="roomTag" class="tag" hidden></span><select id="styleSel" class="style-sel" aria-label="Visual style"><option value="simple">Simple</option><option value="art">Artistic</option><option value="3d">3D</option></select><button class="ghost" id="rulesBtn">How to play</button></div>
 </header>
 
 <main id="home">
