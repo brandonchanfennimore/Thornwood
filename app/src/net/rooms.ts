@@ -4,6 +4,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { doc, getFirestore, onSnapshot, runTransaction, setDoc, type Firestore } from 'firebase/firestore';
 import type { Action, Faction, Level, MapKey, State } from '../game/engine';
+type MapChoice = MapKey | 'random';
 
 // These values are meant to be public; the Firestore rules protect the data. Same project as web/firebase-config.js.
 const config = {
@@ -15,10 +16,10 @@ const config = {
   appId: '1:946302267076:web:af24e6b995bf29815da391',
 };
 
-export interface Seat { faction: Faction; type: 'human' | 'ai' | 'open'; uid?: string; name?: string }
+export interface Seat { faction: Faction; type: 'human' | 'ai' | 'open'; uid?: string; name?: string; random?: boolean }
 export interface Room {
   code: string; hostId: string; status: 'lobby' | 'playing'; rev: number; seats: Seat[];
-  level?: Level; map?: MapKey; gid?: string; state: State | null; last: { seq: number; f: Faction; a: Action } | null;
+  level?: Level; map?: MapChoice; gid?: string; state: State | null; last: { seq: number; f: Faction; a: Action } | null;
 }
 
 let ready: Promise<{ db: Firestore; uid: string }> | null = null;

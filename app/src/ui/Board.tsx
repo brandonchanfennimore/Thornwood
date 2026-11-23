@@ -18,7 +18,7 @@ export function Board() {
   const [view, setView] = useState<View>({ x: 0, y: 0, k: 1 });
   const fitK = useRef(1);
   const mapKey = useGame(s => s.game?.map || (s.mode === 'online' ? s.room?.map : s.mapPick) || 'autumn');
-  const terrain = useMemo(() => terrainSvg(E.MAPS[mapKey] || MAP), [mapKey]);
+  const terrain = useMemo(() => terrainSvg(mapKey === 'random' ? E.MAPS.autumn : E.MAPS[mapKey] || MAP), [mapKey]);
 
   // Fit the map between the stats bar and the hand, and refit when the window changes size.
   useLayoutEffect(() => {

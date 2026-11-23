@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { E, type Faction, type Level } from '../game/engine';
 import { useGame } from '../game/store';
 import { BLURB } from '../game/text';
-import { Emblem } from './Emblem';
+import { Emblem, RandomEmblem } from './Emblem';
 import { MapPicker } from './MapPicker';
 
 const hashCode = () => (/^#[A-Z]{4}$/i.test(location.hash) ? location.hash.slice(1).toUpperCase() : '');
@@ -13,7 +13,12 @@ export function Setup() {
   const start = useGame(s => s.start), create = useGame(s => s.create), join = useGame(s => s.join);
   const mapPick = useGame(s => s.mapPick), pickMap = useGame(s => s.pickMap), setGuide = useGame(s => s.setGuide), name = useGame(s => s.name), setName = useGame(s => s.setName), netError = useGame(s => s.netError), busy = useGame(s => s.busy);
   const [tab, setTab] = useState<'solo' | 'online'>(hashCode() ? 'online' : 'solo');
-  const [f, setF] = useState<Faction>('badger');
+  // Remember the faction choice (including Random) between games, like the map choice.
+  const [f, setFState] = useState<Faction | 'random'>(() => {
+    try { const v = localStorage.getItem('tw-faction'); if (v === 'random' || (E.FACTION_KEYS as string[]).includes(v || '')) return v as Faction | 'random'; } catch { /* private mode */ }
+    return 'badger';
+  });
+  const setF = (v: Faction | 'random') => { setFState(v); try { localStorage.setItem('tw-faction', v); } catch { /* private mode */ } };
   const [n, setN] = useState(4);
   const [level, setLevel] = useState<Level>('medium');
   const [code, setCode] = useState(hashCode());
@@ -33,6 +38,9 @@ export function Setup() {
                 <Emblem f={k} size={40} /><span><b>{E.FACTIONS[k].name}</b><small>{BLURB[k]}</small></span>
               </button>
             ))}
+            <button role="radio" aria-checked={f === 'random'} className={`fac${f === 'random' ? ' on' : ''}`} onClick={() => setF('random')}>
+              <RandomEmblem size={40} /><span><b>Random faction</b><small>Any of the eight, picked when the game starts.</small></span>
+            </button>
           </div>
           <div><span className="lbl">Map</span><MapPicker value={mapPick} onChange={pickMap} /></div>
           <div className="setup-row">

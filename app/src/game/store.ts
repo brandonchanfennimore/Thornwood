@@ -32,6 +32,15 @@ const firstGame = () => { if (ls.get('tw-guide-seen')) return false; ls.set('tw-
 
 const ls = { get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
 const newGid = () => Math.random().toString(36).slice(2, 10);
+export type MapChoice = MapKey | 'random';
+const pickOne = <T,>(a: readonly T[]) => a[Math.floor(Math.random() * a.length)];
+const resolveMap = (m: MapChoice | undefined): MapKey => (m === 'random' ? pickOne(E.MAP_KEYS) : m || 'autumn');
+// Seats set to Random get a faction nobody else picked, decided when the game starts.
+function resolveSeats(seats: Seat[]): Seat[] {
+  const taken = new Set(seats.filter(s => !s.random).map(s => s.faction));
+  const pool = E.FACTION_KEYS.filter(f => !taken.has(f)).sort(() => Math.random() - 0.5);
+  return seats.map(s => { if (!s.random) return s; const { random: _r, ...rest } = s; return { ...rest, faction: pool.pop()! }; });
+}
 const toPlayers = (seats: Seat[]) => seats.map(s => ({ faction: s.faction, name: s.type === 'ai' ? AI_NAMES[s.faction] : s.name || 'Wanderer', ai: s.type === 'ai' }));
 
 interface GameStore {
@@ -43,9 +52,9 @@ interface GameStore {
   land(id: number): void;
   guideOpen: boolean;
   setGuide(open: boolean): void;
-  mapPick: MapKey;
-  pickMap(k: MapKey): void;
-  start(f: Faction, players: number, level: Level): void;
+  mapPick: MapChoice;
+  pickMap(k: MapChoice): void;
+  start(f: Faction | 'random', players: number, level: Level): void;
   quit(): void;
   act(a: Action): void;
   aiStep(): void;
@@ -109,13 +118,14 @@ export const useGame = create<GameStore>((set, get) => {
     land(id) { if (get().flight?.id === id) set({ flight: null }); },
     guideOpen: false,
     setGuide(open) { set({ guideOpen: open }); },
-    mapPick: (E.MAP_KEYS as string[]).includes(ls.get('tw-map') || '') ? ls.get('tw-map') as MapKey : 'autumn',
+    mapPick: ([...E.MAP_KEYS, 'random'] as string[]).includes(ls.get('tw-map') || '') ? ls.get('tw-map') as MapChoice : 'autumn',
     pickMap(k) { set({ mapPick: k }); ls.set('tw-map', k); },
-    start(f, players, level) {
+    start(pick, players, level) {
+      const f = pick === 'random' ? pickOne(E.FACTION_KEYS) : pick;
       const others = E.FACTION_KEYS.filter(x => x !== f).sort(() => Math.random() - 0.5).slice(0, players - 1);
       const seats = [f, ...others].sort((a, b) => E.FACTION_KEYS.indexOf(a) - E.FACTION_KEYS.indexOf(b))
         .map(x => ({ faction: x, name: x === f ? 'You' : AI_NAMES[x], ai: x !== f }));
-      set({ mode: 'solo', game: E.newGame(seats, get().mapPick), me: f, level, selected: null, feed: [], banner: null, battle: null, guideOpen: firstGame() });
+      set({ mode: 'solo', game: E.newGame(seats, resolveMap(get().mapPick)), me: f, level, selected: null, feed: [], banner: null, battle: null, guideOpen: firstGame() });
     },
     quit() {
       unsub?.(); unsub = null;
@@ -157,7 +167,7 @@ export const useGame = create<GameStore>((set, get) => {
     startOnline() {
       const r = get().room; if (!r) return;
       if (r.seats.some(s => s.type === 'open')) return set({ netError: 'Some seats are still open. Wait for friends, switch them to AI, or remove them.' });
-      get().editRoom(g => Object.assign(g, { status: 'playing', gid: newGid(), state: E.newGame(toPlayers(g.seats), g.map), last: null }));
+      get().editRoom(g => { g.seats = resolveSeats(g.seats); Object.assign(g, { status: 'playing', gid: newGid(), state: E.newGame(toPlayers(g.seats), resolveMap(g.map)), last: null }); });
     },
   };
 });
@@ -166,7 +176,7 @@ export const useGame = create<GameStore>((set, get) => {
 export const isMyTurn = (g: State | null, me: Faction | null) => !!g && !!me && g.phase !== 'over' && g.players[g.current].faction === me;
 export const myActions = (g: State | null, me: Faction | null) => (isMyTurn(g, me) ? E.listActions(g!, me!) : []);
 // Keep the on-screen map in step with the game being shown, or with the map picked on the start screen or in the lobby.
-const syncMap = (s: GameStore) => selectMap(s.game?.map || (s.mode === 'online' ? s.room?.map : s.mapPick));
+const syncMap = (s: GameStore) => { const m = s.game?.map || (s.mode === 'online' ? s.room?.map : s.mapPick); selectMap(m === 'random' ? undefined : m); };
 syncMap(useGame.getState());
 useGame.subscribe(syncMap);
 export const isHost = (s: { room: Room | null; uid: string | null }) => !!s.room && s.room.hostId === s.uid;

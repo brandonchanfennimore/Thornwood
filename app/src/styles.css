@@ -239,3 +239,4 @@ button.link:active { transform: none; }
 .price span { display: inline-flex; align-items: center; gap: 2px; }
 .price b { color: var(--ink); }
 .chip-stats span { display: inline-flex; align-items: center; gap: 2px; }
+.rand-emb { display: inline-grid; place-items: center; flex: none; border-radius: 50%; background: repeating-conic-gradient(#e8963a 0 25%, #7a58a8 0 50%) ; border: 2px solid var(--line); color: #fff; font-family: var(--display); font-weight: 800; text-shadow: 0 1px 0 var(--line), 1px 0 0 var(--line), -1px 0 0 var(--line), 0 -1px 0 var(--line); }
