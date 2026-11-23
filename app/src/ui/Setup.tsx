@@ -1,4 +1,4 @@
-// Start screen, floating over the empty map.
+// Start screen, floating over the empty map: play solo against the AI, or create or join an online room.
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { E, type Faction, type Level } from '../game/engine';
@@ -6,28 +6,52 @@ import { useGame } from '../game/store';
 import { BLURB } from '../game/text';
 import { Emblem } from './Emblem';
 
+const hashCode = () => (/^#[A-Z]{4}$/i.test(location.hash) ? location.hash.slice(1).toUpperCase() : '');
+
 export function Setup() {
-  const start = useGame(s => s.start);
+  const start = useGame(s => s.start), create = useGame(s => s.create), join = useGame(s => s.join);
+  const name = useGame(s => s.name), setName = useGame(s => s.setName), netError = useGame(s => s.netError), busy = useGame(s => s.busy);
+  const [tab, setTab] = useState<'solo' | 'online'>(hashCode() ? 'online' : 'solo');
   const [f, setF] = useState<Faction>('badger');
   const [n, setN] = useState(4);
   const [level, setLevel] = useState<Level>('medium');
+  const [code, setCode] = useState(hashCode());
   return (
     <div className="setup-wrap">
       <motion.div className="setup" initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
         <h1>Thornwood</h1>
         <p className="muted">Eight woodland factions, up to four per game. The first to {E.WIN} renown wins.</p>
-        <div className="fac-grid" role="radiogroup" aria-label="Your faction">
-          {E.FACTION_KEYS.map(k => (
-            <button key={k} role="radio" aria-checked={f === k} className={`fac${f === k ? ' on' : ''}`} onClick={() => setF(k)}>
-              <Emblem f={k} size={40} /><span><b>{E.FACTIONS[k].name}</b><small>{BLURB[k]}</small></span>
-            </button>
-          ))}
+        <div className="seg tabs" role="tablist">
+          <button role="tab" aria-selected={tab === 'solo'} className={tab === 'solo' ? 'on' : ''} onClick={() => setTab('solo')}>Play solo</button>
+          <button role="tab" aria-selected={tab === 'online'} className={tab === 'online' ? 'on' : ''} onClick={() => setTab('online')}>Play online with friends</button>
         </div>
-        <div className="setup-row">
-          <div><span className="lbl">Players</span><div className="seg">{[2, 3, 4].map(x => <button key={x} className={n === x ? 'on' : ''} onClick={() => setN(x)}>{x}</button>)}</div></div>
-          <div><span className="lbl">AI difficulty</span><div className="seg">{(['easy', 'medium', 'hard'] as const).map(x => <button key={x} className={level === x ? 'on' : ''} onClick={() => setLevel(x)}>{x[0].toUpperCase() + x.slice(1)}</button>)}</div></div>
-          <button className="primary big" onClick={() => start(f, n, level)}>Start solo game</button>
-        </div>
+        {tab === 'solo' ? <>
+          <div className="fac-grid" role="radiogroup" aria-label="Your faction">
+            {E.FACTION_KEYS.map(k => (
+              <button key={k} role="radio" aria-checked={f === k} className={`fac${f === k ? ' on' : ''}`} onClick={() => setF(k)}>
+                <Emblem f={k} size={40} /><span><b>{E.FACTIONS[k].name}</b><small>{BLURB[k]}</small></span>
+              </button>
+            ))}
+          </div>
+          <div className="setup-row">
+            <div><span className="lbl">Players</span><div className="seg">{[2, 3, 4].map(x => <button key={x} className={n === x ? 'on' : ''} onClick={() => setN(x)}>{x}</button>)}</div></div>
+            <div><span className="lbl">AI difficulty</span><div className="seg">{(['easy', 'medium', 'hard'] as const).map(x => <button key={x} className={level === x ? 'on' : ''} onClick={() => setLevel(x)}>{x[0].toUpperCase() + x.slice(1)}</button>)}</div></div>
+            <button className="primary big" onClick={() => start(f, n, level)}>Start solo game</button>
+          </div>
+        </> : <div className="online">
+          <label className="field"><span className="lbl">Your name</span><input value={name} maxLength={20} placeholder="e.g. Hazel" onChange={e => setName(e.target.value.replace(/[<>&"]/g, ''))} /></label>
+          <div className="online-grid">
+            <div className="online-box">
+              <b>Start a room</b><p className="muted small">You'll get a 4-letter code to share. You pick factions and fill empty seats with AI in the lobby.</p>
+              <button className="primary big" disabled={busy} onClick={create}>Create a room</button>
+            </div>
+            <form className="online-box" onSubmit={e => { e.preventDefault(); join(code); }}>
+              <b>Join a friend</b><p className="muted small">Enter the code your friend shared.</p>
+              <div className="join-row"><input aria-label="Room code" value={code} maxLength={4} placeholder="ABCD" className="code-in" onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))} /><button className="primary" disabled={busy || code.length !== 4}>Join</button></div>
+            </form>
+          </div>
+          <p className="err" role="alert">{busy ? 'Connecting…' : netError}</p>
+        </div>}
       </motion.div>
     </div>
   );

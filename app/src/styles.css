@@ -153,3 +153,26 @@ button:focus-visible, .card:focus-visible, .clr:focus-visible { outline: 3px sol
   .hand { bottom: -100px; }
   .card { width: 110px; left: -55px; }
 }
+
+/* online: tabs, join form, lobby */
+.tabs { align-self: flex-start; }
+.tabs button { font-weight: 700; }
+.online { display: flex; flex-direction: column; gap: 12px; }
+.field input, .code-in { font: inherit; padding: 9px 11px; border: 2px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); min-width: 0; }
+.field { display: flex; flex-direction: column; max-width: 320px; }
+.online-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.online-box { display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 2px solid var(--line); border-radius: 14px; background: rgba(255, 255, 255, .45); margin: 0; }
+.online-box b { font: 800 17px var(--display); }
+.online-box .big { margin-top: auto; }
+.join-row { display: flex; gap: 8px; margin-top: auto; }
+.code-in { flex: 1; font: 800 22px var(--display); letter-spacing: .2em; text-transform: uppercase; width: 100%; }
+.err { color: #a3392b; min-height: 1.3em; font-weight: 600; }
+.lobby-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.code { font: 800 48px/1 var(--display); letter-spacing: .12em; color: var(--accent); }
+.lobby-share { display: flex; gap: 8px; flex-wrap: wrap; }
+.seats { display: flex; flex-direction: column; gap: 8px; }
+.seat { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 10px; border: 2px solid var(--line); border-radius: 12px; background: rgba(255, 255, 255, .45); }
+.seat .who { flex: 1; min-width: 140px; font-weight: 600; display: flex; gap: 6px; align-items: center; }
+.seat select { font: inherit; padding: 6px 8px; border: 2px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink); }
+.tag { font-size: 11px; padding: 1px 8px; border-radius: 99px; border: 1.5px solid var(--line); font-weight: 700; color: var(--muted); }
+.net-err { position: fixed; top: 130px; left: 50%; transform: translateX(-50%); background: #a3392b; color: #fff; padding: 6px 14px; border-radius: 99px; font-weight: 700; z-index: 70; }

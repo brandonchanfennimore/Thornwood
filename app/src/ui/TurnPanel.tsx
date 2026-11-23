@@ -1,6 +1,6 @@
 // Bottom-right: whose turn it is, what you have left, faction-wide actions, and End turn.
 import { E } from '../game/engine';
-import { isMyTurn, myActions, useGame } from '../game/store';
+import { isHost, isMyTurn, myActions, useGame } from '../game/store';
 import { Emblem } from './Emblem';
 
 const HINT: Record<string, string> = {
@@ -9,21 +9,25 @@ const HINT: Record<string, string> = {
 };
 
 export function TurnPanel() {
-  const game = useGame(s => s.game)!, me = useGame(s => s.me)!, act = useGame(s => s.act), quit = useGame(s => s.quit), start = useGame(s => s.start), level = useGame(s => s.level);
-  const cur = game.players[game.current], mine = isMyTurn(game, me), acts = myActions(game, me), p = game.players.find(x => x.faction === me)!;
+  const game = useGame(s => s.game)!, me = useGame(s => s.me), act = useGame(s => s.act), quit = useGame(s => s.quit), start = useGame(s => s.start), level = useGame(s => s.level);
+  const mode = useGame(s => s.mode), host = useGame(isHost), editRoom = useGame(s => s.editRoom);
+  const cur = game.players[game.current], mine = isMyTurn(game, me), acts = myActions(game, me), p = game.players.find(x => x.faction === me);
   if (game.phase === 'over') {
     const w = game.players.find(x => x.faction === game.winner)!;
     return (
       <div className="turn">
         <div className="turn-who"><Emblem f={w.faction} size={44} /><div><b>{w.faction === me ? 'You win!' : `${w.name} wins`}</b><small>{E.FACTIONS[w.faction].name} · {w.renown} renown</small></div></div>
-        <button className="primary big" onClick={() => start(me, game.players.length, level)}>Play again</button>
-        <button className="ghost" onClick={quit}>Back to menu</button>
+        {mode === 'online'
+          ? host ? <button className="primary big" onClick={() => editRoom(g => Object.assign(g, { status: 'lobby', state: null, last: null }))}>Back to lobby</button> : null
+          : <button className="primary big" onClick={() => start(me!, game.players.length, level)}>Play again</button>}
+        <button className="ghost" onClick={quit}>{mode === 'online' ? 'Leave game' : 'Back to menu'}</button>
       </div>
     );
   }
-  if (!mine) return (
+  if (!mine || !me || !p) return (
     <div className="turn">
       <div className="turn-who"><Emblem f={cur.faction} size={44} /><div><b>{cur.name}</b><small>{E.FACTIONS[cur.faction].name} · taking their turn…</small></div></div>
+      {!me && <small className="muted">You are watching this game.</small>}
     </div>
   );
   const whole = acts.filter(a => a.type === 'muster' || a.type === 'hatch');
