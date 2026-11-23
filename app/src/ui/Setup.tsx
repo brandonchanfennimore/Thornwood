@@ -32,15 +32,15 @@ export function Setup() {
           <button role="tab" aria-selected={tab === 'online'} className={tab === 'online' ? 'on' : ''} onClick={() => setTab('online')}>Play online with friends</button>
         </div>
         {tab === 'solo' ? <>
-          <div className="fac-grid" role="radiogroup" aria-label="Your faction">
+          <div className="fac-grid with-random" role="radiogroup" aria-label="Your faction">
+            <button role="radio" aria-checked={f === 'random'} className={`fac random${f === 'random' ? ' on' : ''}`} onClick={() => setF('random')}>
+              <RandomEmblem size={48} /><span><b>Random faction</b><small>Any of the eight, picked when the game starts.</small></span>
+            </button>
             {E.FACTION_KEYS.map(k => (
               <button key={k} role="radio" aria-checked={f === k} className={`fac${f === k ? ' on' : ''}`} onClick={() => setF(k)}>
                 <Emblem f={k} size={40} /><span><b>{E.FACTIONS[k].name}</b><small>{BLURB[k]}</small></span>
               </button>
             ))}
-            <button role="radio" aria-checked={f === 'random'} className={`fac${f === 'random' ? ' on' : ''}`} onClick={() => setF('random')}>
-              <RandomEmblem size={40} /><span><b>Random faction</b><small>Any of the eight, picked when the game starts.</small></span>
-            </button>
           </div>
           <div><span className="lbl">Map</span><MapPicker value={mapPick} onChange={pickMap} /></div>
           <div className="setup-row">

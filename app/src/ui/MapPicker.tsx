@@ -11,9 +11,9 @@ export function MapPicker({ value, onChange, disabled }: { value: MapChoice; onC
     </button>
   );
   return (
-    <div className="map-grid" role="radiogroup" aria-label="Map">
-      {E.MAP_KEYS.map(k => card(k, <span className="map-swatch" style={{ background: boardBg(k) }}><span className="map-season">{SEASON[k]}</span></span>, E.MAPS[k].name, E.MAPS[k].ruleText))}
+    <div className="map-grid with-random" role="radiogroup" aria-label="Map">
       {card('random', <span className="map-swatch random" style={{ background: `linear-gradient(90deg, ${E.MAP_KEYS.map((k, i) => `${boardBg(k)} ${i * 25}% ${(i + 1) * 25}%`).join(', ')})` }}><span className="map-season">?</span></span>, 'Random map', 'One of the four maps, picked when the game starts.')}
+      {E.MAP_KEYS.map(k => card(k, <span className="map-swatch" style={{ background: boardBg(k) }}><span className="map-season">{SEASON[k]}</span></span>, E.MAPS[k].name, E.MAPS[k].ruleText))}
     </div>
   );
 }
