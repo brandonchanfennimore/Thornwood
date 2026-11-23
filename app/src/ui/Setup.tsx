@@ -10,7 +10,7 @@ const hashCode = () => (/^#[A-Z]{4}$/i.test(location.hash) ? location.hash.slice
 
 export function Setup() {
   const start = useGame(s => s.start), create = useGame(s => s.create), join = useGame(s => s.join);
-  const name = useGame(s => s.name), setName = useGame(s => s.setName), netError = useGame(s => s.netError), busy = useGame(s => s.busy);
+  const setGuide = useGame(s => s.setGuide), name = useGame(s => s.name), setName = useGame(s => s.setName), netError = useGame(s => s.netError), busy = useGame(s => s.busy);
   const [tab, setTab] = useState<'solo' | 'online'>(hashCode() ? 'online' : 'solo');
   const [f, setF] = useState<Faction>('badger');
   const [n, setN] = useState(4);
@@ -20,7 +20,7 @@ export function Setup() {
     <div className="setup-wrap">
       <motion.div className="setup" initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
         <h1>Thornwood</h1>
-        <p className="muted">Eight woodland factions, up to four per game. The first to {E.WIN} renown wins.</p>
+        <p className="muted">Eight woodland factions, up to four per game. The first to {E.WIN} renown wins. <button className="link" onClick={() => setGuide(true)}>How to play</button></p>
         <div className="seg tabs" role="tablist">
           <button role="tab" aria-selected={tab === 'solo'} className={tab === 'solo' ? 'on' : ''} onClick={() => setTab('solo')}>Play solo</button>
           <button role="tab" aria-selected={tab === 'online'} className={tab === 'online' ? 'on' : ''} onClick={() => setTab('online')}>Play online with friends</button>

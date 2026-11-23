@@ -17,7 +17,7 @@ function resources(st: State, p: Player): string[] {
 }
 
 export function Hud() {
-  const game = useGame(s => s.game)!, me = useGame(s => s.me), quit = useGame(s => s.quit);
+  const game = useGame(s => s.game)!, quit = useGame(s => s.quit), setGuide = useGame(s => s.setGuide);
   return (
     <div className="hud">
       <button className="brand" onClick={() => { if (confirm('Leave this game?')) quit(); }} title="Leave game">Thornwood</button>
@@ -41,7 +41,10 @@ export function Hud() {
           );
         })}
       </div>
-      <div className="season">Round {game.round}<small>{E.season(game)} season</small></div>
+      <div className="hud-r">
+        <div className="season">Round {game.round}<small>{E.season(game)} season</small></div>
+        <button className="help" aria-label="How to play" title="How to play" onClick={() => setGuide(true)}>?</button>
+      </div>
     </div>
   );
 }

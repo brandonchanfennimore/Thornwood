@@ -5,4 +5,6 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: { port: 5180, fs: { allow: ['..'] } },
+  // The Firebase SDK is its own ~570 kB file, loaded only for online play.
+  build: { chunkSizeWarningLimit: 700 },
 });

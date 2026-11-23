@@ -4,7 +4,9 @@ import { create } from 'zustand';
 import { AI, E, R, type Action, type Battle, type Faction, type Level, type State } from './engine';
 import { AI_NAMES, describe } from './text';
 import { tokenLayout } from './board';
-import { connect, createRoom, joinRoom, saveRoom, watchRoom, type Room, type Seat } from '../net/rooms';
+import type { Room, Seat } from '../net/rooms';
+// Firebase is only downloaded once someone plays online.
+const net = () => import('../net/rooms');
 
 export interface FeedItem { id: number; f: Faction | null; text: string }
 // Critters in the air during a move: where each one starts and lands, plus the token keys to hide until they land.
@@ -25,6 +27,8 @@ type Last = Room['last'];
 const NOTABLE = /gain \d+ renown|breed|gather|take wing|collect \d+|toll|ambush|win|run out|prowl|forage|spawn|surface/i;
 let nextId = 1;
 let unsub: (() => void) | null = null;
+// The guide opens by itself the first time someone starts a game in this browser.
+const firstGame = () => { if (ls.get('tw-guide-seen')) return false; ls.set('tw-guide-seen', '1'); return true; };
 
 const ls = { get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
 const newGid = () => Math.random().toString(36).slice(2, 10);
@@ -37,6 +41,8 @@ interface GameStore {
   selected: number | null; moveCount: number;
   feed: FeedItem[]; banner: FeedItem | null; battle: Battle | null; flight: Flight | null;
   land(id: number): void;
+  guideOpen: boolean;
+  setGuide(open: boolean): void;
   start(f: Faction, players: number, level: Level): void;
   quit(): void;
   act(a: Action): void;
@@ -73,7 +79,7 @@ export const useGame = create<GameStore>((set, get) => {
     if (mode === 'online' && room) {
       if (get().busy) return false;
       set({ busy: true });
-      saveRoom({ ...room, state: next, last }).catch(e => set({ netError: e.message })).finally(() => set({ busy: false }));
+      net().then(n => n.saveRoom({ ...room, state: next, last })).catch(e => set({ netError: e.message })).finally(() => set({ busy: false }));
     } else ingest(prev, next, last);
     return true;
   }
@@ -84,11 +90,12 @@ export const useGame = create<GameStore>((set, get) => {
     const fresh = !old || r.gid !== old.gid || !r.state;
     set({ room: r, me: seat?.faction || null, level: r.level || 'medium', netError: '' });
     if (!r.state || r.status !== 'playing') return set({ game: null, feed: [], banner: null, battle: null, selected: null });
-    if (fresh || !game) set({ game: r.state, feed: [], banner: null, battle: null, selected: null });
+    if (fresh || !game) set({ game: r.state, feed: [], banner: null, battle: null, selected: null, guideOpen: firstGame() || get().guideOpen });
     else ingest(game, r.state, r.last);
   }
   async function open(code: string) {
     unsub?.();
+    const { connect, watchRoom } = await net();
     const { uid } = await connect();
     set({ mode: 'online', uid, room: null, game: null });
     try { history.replaceState(null, '', '#' + code); } catch { /* sandboxed */ }
@@ -98,11 +105,13 @@ export const useGame = create<GameStore>((set, get) => {
     mode: null, game: null, me: null, level: 'medium', room: null, uid: null, name: ls.get('tw-name') || '', netError: '', busy: false,
     selected: null, moveCount: 1, feed: [], banner: null, battle: null, flight: null,
     land(id) { if (get().flight?.id === id) set({ flight: null }); },
+    guideOpen: false,
+    setGuide(open) { set({ guideOpen: open }); },
     start(f, players, level) {
       const others = E.FACTION_KEYS.filter(x => x !== f).sort(() => Math.random() - 0.5).slice(0, players - 1);
       const seats = [f, ...others].sort((a, b) => E.FACTION_KEYS.indexOf(a) - E.FACTION_KEYS.indexOf(b))
         .map(x => ({ faction: x, name: x === f ? 'You' : AI_NAMES[x], ai: x !== f }));
-      set({ mode: 'solo', game: E.newGame(seats), me: f, level, selected: null, feed: [], banner: null, battle: null });
+      set({ mode: 'solo', game: E.newGame(seats), me: f, level, selected: null, feed: [], banner: null, battle: null, guideOpen: firstGame() });
     },
     quit() {
       unsub?.(); unsub = null;
@@ -128,18 +137,18 @@ export const useGame = create<GameStore>((set, get) => {
     setName(n) { set({ name: n }); ls.set('tw-name', n); },
     async create() {
       set({ netError: '', busy: true });
-      try { await open(await createRoom(get().name.trim() || 'Wanderer')); } catch (e) { set({ netError: (e as Error).message }); } finally { set({ busy: false }); }
+      try { await open(await (await net()).createRoom(get().name.trim() || 'Wanderer')); } catch (e) { set({ netError: (e as Error).message }); } finally { set({ busy: false }); }
     },
     async join(code) {
       code = code.trim().toUpperCase();
       if (!/^[A-Z]{4}$/.test(code)) return set({ netError: 'Room codes are 4 letters.' });
       set({ netError: '', busy: true });
-      try { await joinRoom(code, get().name.trim() || 'Wanderer', E.FACTION_KEYS); await open(code); } catch (e) { set({ netError: (e as Error).message }); } finally { set({ busy: false }); }
+      try { await (await net()).joinRoom(code, get().name.trim() || 'Wanderer', E.FACTION_KEYS); await open(code); } catch (e) { set({ netError: (e as Error).message }); } finally { set({ busy: false }); }
     },
     editRoom(fn) {
       const r = get().room; if (!r) return;
       const copy = structuredClone(r); fn(copy);
-      saveRoom(copy).catch(e => set({ netError: e.message }));
+      net().then(n => n.saveRoom(copy)).catch(e => set({ netError: e.message }));
     },
     startOnline() {
       const r = get().room; if (!r) return;
