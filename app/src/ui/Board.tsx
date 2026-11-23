@@ -1,16 +1,17 @@
 // The whole page is the map: pan with a drag, zoom with the wheel or a pinch. Clearings open the action popup.
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { E, MAP, R, type Faction } from '../game/engine';
 import { MAP_H, MAP_W, MAP_X, MAP_Y, PIECE_H, slotPos, terrainSvg, tokenLayout } from '../game/board';
-import { FLIGHT_MS, FLIGHT_STAGGER, myActions, useGame, type Flight } from '../game/store';
+import { FLIGHT_STAGGER, myActions, useGame, type Flight } from '../game/store';
 import { ClearingPopup } from './ClearingPopup';
+import { usePieceSet } from './Emblem';
 
 type View = { x: number; y: number; k: number };
 const HUD_TOP = 92, HAND_PEEK = 150;
 const isPhone = () => window.innerWidth < 760;
 
-export function Board() {
+function Board2D() {
   const game = useGame(s => s.game), me = useGame(s => s.me), sel = useGame(s => s.selected);
   const select = useGame(s => s.select), act = useGame(s => s.act);
   const wrap = useRef<HTMLDivElement>(null);
@@ -18,7 +19,8 @@ export function Board() {
   const [view, setView] = useState<View>({ x: 0, y: 0, k: 1 });
   const fitK = useRef(1);
   const mapKey = useGame(s => s.game?.map || (s.mode === 'online' ? s.room?.map : s.mapPick) || 'autumn');
-  const terrain = useMemo(() => terrainSvg(mapKey === 'random' ? E.MAPS.autumn : E.MAPS[mapKey] || MAP), [mapKey]);
+  const simple = useGame(s => s.look === 'simple');
+  const terrain = useMemo(() => terrainSvg(mapKey === 'random' ? E.MAPS.autumn : E.MAPS[mapKey] || MAP, simple), [mapKey, simple]);
 
   // Fit the map between the stats bar and the hand, and refit when the window changes size.
   useLayoutEffect(() => {
@@ -111,6 +113,7 @@ export function Board() {
 }
 
 function Pieces() {
+  const set = usePieceSet();
   const game = useGame(s => s.game)!, flight = useGame(s => s.flight);
   const items: React.ReactNode[] = [];
   R.forEach((c, r) => {
@@ -123,7 +126,7 @@ function Pieces() {
       const h = PIECE_H[t.f as Faction] * 0.9;
       items.push(
         <Pop key={t.key} id={t.key} x={t.x} y={t.y} hidden={!!flight?.landing.has(t.key)}>
-          <use href={`#a-${t.f}`} x={t.x - 13} y={t.y - h / 2 - 4} width={26} height={h} />
+          <use href={`#${set}-${t.f}`} x={t.x - 13} y={t.y - h / 2 - 4} width={26} height={h} />
           {t.extra > 0 && <><circle cx={t.x + 10} cy={t.y + 8} r={9} fill="#fff" stroke="#333" /><text x={t.x + 10} y={t.y + 12} textAnchor="middle" fontSize={11} fontWeight={800} fill="#222">{t.extra}</text></>}
         </Pop>,
       );
@@ -138,18 +141,19 @@ function Flyers() {
   const flight = useGame(s => s.flight), land = useGame(s => s.land);
   useEffect(() => {
     if (!flight) return;
-    const t = setTimeout(() => land(flight.id), FLIGHT_MS + FLIGHT_STAGGER * flight.paths.length + 60);
+    const t = setTimeout(() => land(flight.id), flight.ms + FLIGHT_STAGGER * flight.paths.length + 60);
     return () => clearTimeout(t);
   }, [flight, land]);
   if (!flight) return null;
   return <>{flight.paths.map((p, i) => <Flyer key={`${flight.id}-${i}`} f={flight} p={p} delay={i * FLIGHT_STAGGER} />)}</>;
 }
 function Flyer({ f, p, delay }: { f: Flight; p: Flight['paths'][number]; delay: number }) {
+  const set = usePieceSet();
   const h = PIECE_H[f.f] * 0.9, lift = Math.min(90, 30 + Math.hypot(p.dx - p.sx, p.dy - p.sy) * 0.18);
   return (
     <motion.g initial={{ x: p.sx, y: p.sy }} animate={{ x: [p.sx, (p.sx + p.dx) / 2, p.dx], y: [p.sy, (p.sy + p.dy) / 2 - lift, p.dy] }}
-      transition={{ duration: FLIGHT_MS / 1000, delay: delay / 1000, ease: 'easeInOut', times: [0, 0.5, 1] }}>
-      <use href={`#a-${f.f}`} x={-13} y={-h / 2 - 4} width={26} height={h} />
+      transition={{ duration: f.ms / 1000, delay: delay / 1000, ease: 'easeInOut', times: [0, 0.5, 1] }}>
+      <use href={`#${set}-${f.f}`} x={-13} y={-h / 2 - 4} width={26} height={h} />
     </motion.g>
   );
 }
@@ -169,4 +173,11 @@ function Pop({ id, x, y, hidden = false, children }: { id: string; x: number; y:
       </motion.g>
     </g>
   );
+}
+
+// three.js is only downloaded when someone switches to the 3D style.
+const Board3D = lazy(() => import('./Board3D'));
+export function Board() {
+  const threeD = useGame(s => s.look === '3d');
+  return threeD ? <Suspense fallback={<div className="board board-loading">Setting up the 3D table…</div>}><Board3D /></Suspense> : <Board2D />;
 }

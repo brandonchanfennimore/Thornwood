@@ -3,6 +3,8 @@ import { E, MAP, type Player, type State } from '../game/engine';
 import { useGame } from '../game/store';
 import { Emblem } from './Emblem';
 import { ResIcon } from './Res';
+import { Speed } from './Overlays';
+import { LookSwitch } from './LookSwitch';
 
 function resources(st: State, p: Player): React.ReactNode[] {
   const B = (n: string) => <><svg width={13} height={13} aria-hidden="true"><use href={`#b-${p.faction}`} width="100%" height="100%" /></svg>{n}</>;
@@ -45,6 +47,8 @@ export function Hud() {
       </div>
       <div className="hud-r">
         <div className="season" title={`${MAP.name}: ${MAP.ruleText}`}>Round {game.round}<small>{E.season(game)} season</small><small className="map-name">{MAP.name}</small></div>
+        <Speed />
+        <LookSwitch />
         <button className="help" aria-label="How to play" title="How to play" onClick={() => setGuide(true)}>?</button>
       </div>
     </div>

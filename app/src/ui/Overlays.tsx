@@ -21,6 +21,35 @@ export function Banner() {
   );
 }
 
+// Dawn › Day › Dusk for whoever's turn it is, just under the scores.
+const PH = [['dawn', 'Dawn'], ['day', 'Day'], ['dusk', 'Dusk']] as const;
+export function PhaseBar() {
+  const ph = useGame(s => s.turnPhase), pf = useGame(s => s.phaseF), game = useGame(s => s.game), me = useGame(s => s.me);
+  if (!game || game.phase === 'over') return null;
+  const f = pf || game.players[game.current].faction, p = game.players.find(x => x.faction === f)!, i = PH.findIndex(x => x[0] === ph);
+  return (
+    <div className="phasebar" role="status" aria-live="polite">
+      <Emblem f={f} size={26} /><span className="pb-who">{f === me ? 'Your turn' : `${p.name}'s turn`}</span>
+      {PH.map(([k, label], j) => (
+        <span key={k} className={`pb-step${j === i ? ' now' : j < i ? ' done' : ''} pb-${k}`}>
+          {j > 0 && <span className="pb-arrow">›</span>}
+          <svg width="20" height="20" aria-hidden="true"><use href={`#p-${k}`} width="100%" height="100%" /></svg>{label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+export function Speed() {
+  const speed = useGame(s => s.speed), setSpeed = useGame(s => s.setSpeed), solo = useGame(s => s.mode === 'solo');
+  if (!solo) return null;
+  return (
+    <div className="seg speed" role="radiogroup" aria-label="Playback speed">
+      {(['slow', 'normal', 'fast'] as const).map(x => <button key={x} role="radio" aria-checked={speed === x} className={speed === x ? 'on' : ''} onClick={() => setSpeed(x)}>{x[0].toUpperCase() + x.slice(1)}</button>)}
+    </div>
+  );
+}
+
 export function Feed() {
   const feed = useGame(s => s.feed);
   const [open, setOpen] = useState(true);
@@ -37,7 +66,8 @@ export function Feed() {
 export function BattleRoll() {
   const battle = useGame(s => s.battle);
   const [shown, setShown] = useState(battle);
-  useEffect(() => { setShown(battle); if (!battle) return; const t = setTimeout(() => setShown(null), 2400); return () => clearTimeout(t); }, [battle]);
+  const k = useGame(s => (s.mode === 'solo' ? { slow: 1.7, normal: 1, fast: 0.5 }[s.speed] : 1));
+  useEffect(() => { setShown(battle); if (!battle) return; const t = setTimeout(() => setShown(null), 2400 * k); return () => clearTimeout(t); }, [battle, k]);
   const b = shown;
   return (
     <AnimatePresence>

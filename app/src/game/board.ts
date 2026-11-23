@@ -21,7 +21,7 @@ type Palette = {
 };
 const INK = '#3b2418';
 // Each map's season sets the colors: autumn leaves, spring blossom, golden summer grass, winter snow and pines.
-const PALETTES: Record<MapKey, Palette> = {
+export const PALETTES: Record<MapKey, Palette> = {
   autumn: {
     bg: '#9cc4ae', blobs: ['#8db8a2', '#aed0bd'], trees: ['#e8963a', '#d9772b', '#c4582a', '#eab04a', '#b8481f'], treeHi: 'rgba(255,236,190,.35)',
     pathIn: '#efd49a', pathDash: '#c9a45e', riverOut: '#2a3a40', riverIn: '#5f9fb0', riverHi: '#d3ece6',
@@ -56,8 +56,10 @@ function ruleMarks(m: MapDef): string {
 }
 
 // The land runs well past the map edge, so panning never shows a hard border.
-export function terrainSvg(m: MapDef): string {
-  const P = PALETTES[m.key], R = m.regions;
+// simple: the flat look. No inked outlines or hand-drawn wobble; paths and clearings get soft colored borders instead.
+const EDGE = { meadow: '#b9a35a', marsh: '#6fa392', grove: '#7fa35f' };
+export function terrainSvg(m: MapDef, simple = false): string {
+  const P = PALETTES[m.key], R = m.regions, pathOut = simple ? '#8a7350' : INK;
   const rand = rng(7331), ink = ` stroke="${INK}" stroke-width="2"`;
   let h = `<rect x="-1500" y="-1500" width="${MAP_W + 3000}" height="${MAP_H + 3000}" fill="${P.bg}"/>`;
   for (let i = 0; i < 160; i++) h += `<ellipse cx="${-600 + rand() * 2200}" cy="${-500 + rand() * 1800}" rx="${30 + rand() * 60}" ry="${20 + rand() * 40}" fill="${rand() < .5 ? P.blobs[0] : P.blobs[1]}" opacity=".6"/>`;
@@ -81,7 +83,7 @@ export function terrainSvg(m: MapDef): string {
   m.edges.forEach(([a, b], i) => {
     if (isRiv(a, b)) return;
     const d = curve(R[a], R[b], (i % 2 ? 1 : -1) * 14);
-    h += `<path d="${d}" stroke="${INK}" stroke-width="20" fill="none" stroke-linecap="round"/><path d="${d}" stroke="${P.pathIn}" stroke-width="15" fill="none" stroke-linecap="round"/><path d="${d}" stroke="${P.pathDash}" stroke-width="2" stroke-dasharray="3 10" fill="none" stroke-linecap="round"/>`;
+    h += `<path d="${d}" stroke="${pathOut}" stroke-width="20" fill="none" stroke-linecap="round"/><path d="${d}" stroke="${P.pathIn}" stroke-width="15" fill="none" stroke-linecap="round"/><path d="${d}" stroke="${P.pathDash}" stroke-width="2" stroke-dasharray="3 10" fill="none" stroke-linecap="round"/>`;
   });
   riverPaths.forEach(([a, b], i) => { h += `<path d="${curve(a, b, (i % 2 ? 1 : -1) * 22)}" stroke="${P.riverOut}" stroke-width="32" fill="none" stroke-linecap="round"/>`; });
   riverPaths.forEach(([a, b], i) => { const d = curve(a, b, (i % 2 ? 1 : -1) * 22); h += `<path d="${d}" stroke="${P.riverIn}" stroke-width="27" fill="none" stroke-linecap="round"/><path d="${d}" stroke="${P.riverHi}" stroke-width="2.5" stroke-dasharray="14 18" fill="none" stroke-linecap="round" opacity=".8"/>`; });
@@ -91,7 +93,7 @@ export function terrainSvg(m: MapDef): string {
     : `<circle cx="${t.x + 3}" cy="${t.y + 5}" r="${t.r}" fill="rgba(0,0,0,.28)"/><circle cx="${t.x}" cy="${t.y}" r="${t.r}" fill="${t.c}"${ink}/><circle cx="${t.x - t.r / 3}" cy="${t.y - t.r / 3}" r="${t.r / 2.2}" fill="${P.treeHi}"/><path d="M${t.x + t.r * .1} ${t.y + t.r * .55} q${t.r * .3} -${t.r * .15} ${t.r * .5} -${t.r * .5}" stroke="${INK}" stroke-width="1.4" fill="none" stroke-linecap="round"/>`).join('');
   if (P.snow) for (let i = 0; i < 260; i++) h += `<circle cx="${-500 + rand() * 2000}" cy="${-400 + rand() * 1600}" r="${1 + rand() * 1.6}" fill="#fff" opacity=".9"/>`;
   R.forEach(c => {
-    h += `<circle cx="${c.x + 3}" cy="${c.y + 6}" r="76" fill="rgba(0,0,0,.3)"/><circle cx="${c.x}" cy="${c.y}" r="74" fill="${INK}"/><circle cx="${c.x}" cy="${c.y}" r="71" fill="${P.fill[c.terrain]}"/>`;
+    h += `<circle cx="${c.x + 3}" cy="${c.y + 6}" r="76" fill="rgba(0,0,0,.3)"/><circle cx="${c.x}" cy="${c.y}" r="74" fill="${simple ? EDGE[c.terrain] : INK}"/><circle cx="${c.x}" cy="${c.y}" r="71" fill="${P.fill[c.terrain]}"/>`;
     for (let k = 0; k < 16; k++) {
       const ang = rand() * Math.PI * 2; if (ang > 1.1 && ang < 2.05) continue;
       const rr = 57 + rand() * 8, x = c.x + Math.cos(ang) * rr, y = c.y + Math.sin(ang) * rr;
@@ -104,6 +106,7 @@ export function terrainSvg(m: MapDef): string {
       <use href="#t-${c.terrain}" x="${-w / 2 + 5}" y="-10" width="19" height="19"/><text class="plate" x="12" y="5" text-anchor="middle">${c.name}</text></g>`;
   });
   h += ruleMarks(m);
+  if (simple) return h.replace(/ stroke="#3b2418" stroke-width="[\d.]+"/g, '').replace(/<path d="M[^"]*q[^"]*" stroke="#3b2418"[^>]*\/>/g, '');
   return `<g filter="url(#rough)">${h}</g>`;
 }
 

@@ -1,19 +1,28 @@
 // Action popup anchored beside the selected clearing. It follows the clearing while the map pans or zooms.
-import { autoUpdate, flip, offset, shift, useFloating, FloatingPortal } from '@floating-ui/react';
+import { useLayoutEffect } from 'react';
+import { autoUpdate, flip, offset, shift, useFloating, FloatingPortal, type VirtualElement } from '@floating-ui/react';
 import { motion } from 'motion/react';
 import { E, MAP, R, type Action } from '../game/engine';
 import { myActions, useGame } from '../game/store';
 import { BUILD_NAME, short } from '../game/text';
 import { Emblem } from './Emblem';
 
-export function ClearingPopup({ r, anchor }: { r: number; anchor: Element | null }) {
+export function ClearingPopup({ r, anchor }: { r: number; anchor: Element | VirtualElement | null }) {
   const game = useGame(s => s.game)!, me = useGame(s => s.me), act = useGame(s => s.act), select = useGame(s => s.select);
   const moveCount = useGame(s => s.moveCount), setMoveCount = useGame(s => s.setMoveCount);
+  // Open on the side away from where this clearing's critters can move, so the popup never covers a destination.
+  const away = (() => {
+    const g = useGame.getState(), ds = myActions(g.game, g.me).filter(a => a.type === 'move' && a.from === r);
+    const dx = ds.reduce((n, a) => n + R[a.to!].x - R[r].x, 0);
+    return ds.length && dx > 0 ? 'left' : 'right';
+  })();
   const { refs, floatingStyles } = useFloating({
-    elements: { reference: anchor }, placement: 'right', middleware: [offset(14), flip({ fallbackPlacements: ['left', 'bottom', 'top'] }), shift({ padding: 12 })],
+    placement: away, middleware: [offset(14), flip({ fallbackPlacements: ['top', 'bottom', away === 'left' ? 'right' : 'left'] }), shift({ padding: 12 })],
     whileElementsMounted: (ref, fl, upd) => autoUpdate(ref, fl, upd, { animationFrame: true }),
   });
 
+  // The anchor is the clearing's circle on the 2D map, or a point projected from the 3D table.
+  useLayoutEffect(() => { refs.setPositionReference(anchor); }, [anchor, refs]);
   const c = R[r], rl = E.ruler(game, r);
   const here = game.players.filter(p => E.pieces(game, r, p.faction) > 0);
   const acts = myActions(game, me);
@@ -67,7 +76,8 @@ export function ClearingPopup({ r, anchor }: { r: number; anchor: Element | null
               <button onClick={() => setMoveCount(Math.min(max, moveCount + 1))} aria-label="More">+</button>
               <small>of {max}</small>
             </div>
-            <small className="muted">then tap a glowing clearing</small>
+            <small className="muted">then tap a glowing clearing, or pick one here:</small>
+            <div className="dests">{moves.map(a => <button key={a.to} onClick={() => act(a)}>{R[a.to!].name}</button>)}</div>
           </div>
         )}
         {local.map((a, i) => {

@@ -6,6 +6,7 @@ import { useGame } from '../game/store';
 import { BLURB } from '../game/text';
 import { Emblem, RandomEmblem } from './Emblem';
 import { MapPicker } from './MapPicker';
+import { LookSwitch } from './LookSwitch';
 
 const hashCode = () => (/^#[A-Z]{4}$/i.test(location.hash) ? location.hash.slice(1).toUpperCase() : '');
 
@@ -25,7 +26,7 @@ export function Setup() {
   return (
     <div className="setup-wrap">
       <motion.div className="setup" initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-        <h1>Thornwood</h1>
+        <div className="setup-top"><h1>Thornwood</h1><LookSwitch /></div>
         <p className="muted">Eight woodland factions, up to four per game. The first to {E.WIN} renown wins. <button className="link" onClick={() => setGuide(true)}>How to play</button></p>
         <div className="seg tabs" role="tablist">
           <button role="tab" aria-selected={tab === 'solo'} className={tab === 'solo' ? 'on' : ''} onClick={() => setTab('solo')}>Play solo</button>

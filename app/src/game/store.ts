@@ -10,9 +10,9 @@ const net = () => import('../net/rooms');
 
 export interface FeedItem { id: number; f: Faction | null; text: string }
 // Critters in the air during a move: where each one starts and lands, plus the token keys to hide until they land.
-export interface Flight { id: number; f: Faction; paths: { sx: number; sy: number; dx: number; dy: number }[]; leaving: Set<string>; landing: Set<string> }
+export interface Flight { id: number; f: Faction; ms: number; paths: { sx: number; sy: number; dx: number; dy: number }[]; leaving: Set<string>; landing: Set<string> }
 export const FLIGHT_MS = 850, FLIGHT_STAGGER = 70;
-function makeFlight(prev: State, next: State, f: Faction, from: number, to: number, n: number): Flight {
+function makeFlight(prev: State, next: State, f: Faction, from: number, to: number, n: number, ms: number): Flight {
   const a = tokenLayout(prev, from).filter(t => t.f === f), b = tokenLayout(next, to).filter(t => t.f === f);
   const before = new Set(tokenLayout(prev, to).filter(t => t.f === f).map(t => t.key));
   const after = new Set(tokenLayout(next, from).map(t => t.key));
@@ -21,12 +21,19 @@ function makeFlight(prev: State, next: State, f: Faction, from: number, to: numb
   const pick = <T,>(arr: T[], i: number, fb: T) => arr[i] ?? arr[arr.length - 1] ?? fb;
   const src = { x: R[from].x, y: R[from].y, key: '' }, dst = { x: R[to].x, y: R[to].y, key: '' };
   const paths = Array.from({ length: k }, (_, i) => { const s0 = pick(lift, i, src), d0 = pick(land, i, dst); return { sx: s0.x, sy: s0.y, dx: d0.x, dy: d0.y }; });
-  return { id: nextId++, f, paths, leaving: new Set(lift.map(t => t.key)), landing: new Set(land.map(t => t.key)) };
+  return { id: nextId++, f, ms, paths, leaving: new Set(lift.map(t => t.key)), landing: new Set(land.map(t => t.key)) };
 }
 type Last = Room['last'];
 const NOTABLE = /gain \d+ renown|breed|gather|take wing|collect \d+|toll|ambush|win|run out|prowl|forage|spawn|surface/i;
 let nextId = 1;
 let unsub: (() => void) | null = null;
+let phaseTimer: ReturnType<typeof setTimeout> | undefined;
+export type Speed = 'slow' | 'normal' | 'fast';
+export type TurnPhase = 'dawn' | 'day' | 'dusk';
+export type Look = 'art' | 'simple' | '3d';
+// The page chrome uses the storybook look for both Artistic and 3D; Simple has its own flat look with dark mode.
+const applyLook = (l: Look) => { document.documentElement.dataset.style = l === 'simple' ? 'simple' : 'art'; };
+const SPEED: Record<Speed, number> = { slow: 1.7, normal: 1, fast: 0.5 };
 // The guide opens by itself the first time someone starts a game in this browser.
 const firstGame = () => { if (ls.get('tw-guide-seen')) return false; ls.set('tw-guide-seen', '1'); return true; };
 
@@ -55,6 +62,11 @@ interface GameStore {
   mapPick: MapChoice;
   pickMap(k: MapChoice): void;
   start(f: Faction | 'random', players: number, level: Level): void;
+  speed: Speed;
+  look: Look;
+  setLook(l: Look): void;
+  setSpeed(s: Speed): void;
+  turnPhase: TurnPhase; phaseF: Faction | null;
   quit(): void;
   act(a: Action): void;
   aiStep(): void;
@@ -68,6 +80,17 @@ interface GameStore {
 }
 
 export const useGame = create<GameStore>((set, get) => {
+  // Scale a playback delay by the solo speed setting. Online games always play at normal speed, so everyone stays in step.
+  const pace = (ms: number) => (get().mode === 'solo' ? ms * SPEED[get().speed] : ms);
+  // Show the turn phases in order: the old player's Dusk, the new player's Dawn, then Day. AI players wait for Day.
+  function phases(st: State, from: 'dusk' | 'dawn', prevF?: Faction) {
+    clearTimeout(phaseTimer);
+    const cur = st.players[st.current].faction;
+    if (st.phase === 'over') return set({ turnPhase: 'dusk', phaseF: prevF || cur });
+    if (st.phase === 'discard') return set({ turnPhase: 'dusk', phaseF: cur });
+    const dawn = () => { set({ turnPhase: 'dawn', phaseF: cur }); phaseTimer = setTimeout(() => set({ turnPhase: 'day' }), pace(1100)); };
+    if (from === 'dusk') { set({ turnPhase: 'dusk', phaseF: prevF || cur }); phaseTimer = setTimeout(dawn, pace(1000)); } else dawn();
+  }
   // Turn a state change into the banner line, feed entries and battle overlay. Runs for solo moves and for every room update.
   function ingest(prev: State | null, next: State, last: Last) {
     if (!prev || next.seq === prev.seq) return set({ game: next });
@@ -77,7 +100,10 @@ export const useGame = create<GameStore>((set, get) => {
     const extra = lines.filter(l => NOTABLE.test(l)).map(l => ({ id: nextId++, f: E.FACTION_KEYS.find(k => l.startsWith(E.FACTIONS[k].short)) || null, text: l }));
     const battle = last?.a.type === 'fight' && next.lastBattle?.seq === next.seq ? next.lastBattle : null;
     const a = last?.seq === next.seq ? last.a : null;
-    const flight = a?.type === 'move' && last ? makeFlight(prev, next, last.f, a.from!, a.to!, a.count || 1) : null;
+    const flight = a?.type === 'move' && last ? makeFlight(prev, next, last.f, a.from!, a.to!, a.count || 1, pace(FLIGHT_MS)) : null;
+    const turned = next.current !== prev.current || next.round !== prev.round || (next.phase === 'over' && prev.phase !== 'over');
+    if (turned || next.phase === 'discard') phases(next, 'dusk', prev.players[prev.current].faction);
+    else if (prev.phase === 'discard') set({ turnPhase: 'day' });
     set({ game: next, banner: head || get().banner, feed: [...extra.reverse(), ...(head ? [head] : []), ...get().feed].slice(0, 30), battle, flight });
   }
   // Apply one action for faction f. Solo: show it now. Online: write it, and the room snapshot shows it to everyone.
@@ -101,7 +127,7 @@ export const useGame = create<GameStore>((set, get) => {
     const fresh = !old || r.gid !== old.gid || !r.state;
     set({ room: r, me: seat?.faction || null, level: r.level || 'medium', netError: '' });
     if (!r.state || r.status !== 'playing') return set({ game: null, feed: [], banner: null, battle: null, selected: null });
-    if (fresh || !game) set({ game: r.state, feed: [], banner: null, battle: null, selected: null, guideOpen: firstGame() || get().guideOpen });
+    if (fresh || !game) { set({ game: r.state, feed: [], banner: null, battle: null, selected: null, guideOpen: firstGame() || get().guideOpen }); phases(r.state, 'dawn'); }
     else ingest(game, r.state, r.last);
   }
   async function open(code: string) {
@@ -113,6 +139,11 @@ export const useGame = create<GameStore>((set, get) => {
     unsub = await watchRoom(code, onRoom, e => set({ netError: e.message }));
   }
   return {
+    speed: (['slow', 'normal', 'fast'] as string[]).includes(ls.get('tw-speed2') || '') ? ls.get('tw-speed2') as Speed : 'normal',
+    setSpeed(sp) { set({ speed: sp }); ls.set('tw-speed2', sp); },
+    turnPhase: 'day', phaseF: null,
+    look: (['art', 'simple', '3d'] as string[]).includes(ls.get('tw-style') || '') ? ls.get('tw-style') as Look : 'art',
+    setLook(l) { set({ look: l }); ls.set('tw-style', l); applyLook(l); },
     mode: null, game: null, me: null, level: 'medium', room: null, uid: null, name: ls.get('tw-name') || '', netError: '', busy: false,
     selected: null, moveCount: 1, feed: [], banner: null, battle: null, flight: null,
     land(id) { if (get().flight?.id === id) set({ flight: null }); },
@@ -125,9 +156,12 @@ export const useGame = create<GameStore>((set, get) => {
       const others = E.FACTION_KEYS.filter(x => x !== f).sort(() => Math.random() - 0.5).slice(0, players - 1);
       const seats = [f, ...others].sort((a, b) => E.FACTION_KEYS.indexOf(a) - E.FACTION_KEYS.indexOf(b))
         .map(x => ({ faction: x, name: x === f ? 'You' : AI_NAMES[x], ai: x !== f }));
-      set({ mode: 'solo', game: E.newGame(seats, resolveMap(get().mapPick)), me: f, level, selected: null, feed: [], banner: null, battle: null, guideOpen: firstGame() });
+      const game = E.newGame(seats, resolveMap(get().mapPick));
+      set({ mode: 'solo', game, me: f, level, selected: null, feed: [], banner: null, battle: null, guideOpen: firstGame() });
+      phases(game, 'dawn');
     },
     quit() {
+      clearTimeout(phaseTimer);
       unsub?.(); unsub = null;
       try { history.replaceState(null, '', location.pathname); } catch { /* sandboxed */ }
       set({ mode: null, room: null, game: null, me: null, selected: null, feed: [], banner: null, battle: null, netError: '' });
@@ -178,5 +212,6 @@ export const myActions = (g: State | null, me: Faction | null) => (isMyTurn(g, m
 // Keep the on-screen map in step with the game being shown, or with the map picked on the start screen or in the lobby.
 const syncMap = (s: GameStore) => { const m = s.game?.map || (s.mode === 'online' ? s.room?.map : s.mapPick); selectMap(m === 'random' ? undefined : m); };
 syncMap(useGame.getState());
+applyLook(useGame.getState().look);
 useGame.subscribe(syncMap);
 export const isHost = (s: { room: Room | null; uid: string | null }) => !!s.room && s.room.hostId === s.uid;
