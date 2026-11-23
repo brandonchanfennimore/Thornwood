@@ -2,17 +2,19 @@
 import { E, MAP, type Player, type State } from '../game/engine';
 import { useGame } from '../game/store';
 import { Emblem } from './Emblem';
+import { ResIcon } from './Res';
 
-function resources(st: State, p: Player): string[] {
+function resources(st: State, p: Player): React.ReactNode[] {
+  const B = (n: string) => <><svg width={13} height={13} aria-hidden="true"><use href={`#b-${p.faction}`} width="100%" height="100%" /></svg>{n}</>;
   const f = p.faction, nb = E.buildingsOnMap(st, f), mx = E.FACTIONS[f].maxB;
   switch (f) {
-    case 'badger': return [`${p.stone} stone`, `${nb}/${mx} setts`];
-    case 'otter': return [`${p.coins} coins`, `${nb}/${mx} posts`];
+    case 'badger': return [<><ResIcon id="stone" size={14} />{p.stone}</>, B(`${nb}/${mx}`)];
+    case 'otter': return [<><ResIcon id="coin" size={14} />{p.coins}</>, B(`${nb}/${mx}`)];
     case 'rabbit': case 'fox': return [`rules ${E.ruledCount(st, f)}`];
-    case 'frog': return [`${nb}/${mx} pads`, `chain ${E.chorus(st, f)}`];
-    case 'owl': return [`${nb}/${mx} nests`];
-    case 'hedgehog': return [`${nb}/${mx} hollows`];
-    case 'mole': return [`${nb}/${mx} tunnels`];
+    case 'frog': return [B(`${nb}/${mx}`), `chain ${E.chorus(st, f)}`];
+    case 'owl': return [B(`${nb}/${mx}`)];
+    case 'hedgehog': return [B(`${nb}/${mx}`)];
+    case 'mole': return [B(`${nb}/${mx}`)];
   }
 }
 
@@ -31,7 +33,7 @@ export function Hud() {
                 <div className="chip-name">{p.name}</div>
                 <div className="chip-stats">
                   <span>{tot - E.supply(game, p.faction)}/{tot} warriors</span>
-                  {resources(game, p).map(r => <span key={r}>{r}</span>)}
+                  {resources(game, p).map((r, k) => <span key={k}>{r}</span>)}
                   <span>{p.hand.length} cards</span>
                 </div>
               </div>
