@@ -96,7 +96,8 @@ button:focus-visible, .card:focus-visible, .clr:focus-visible { outline: 3px sol
 .popup-head { display: flex; align-items: center; gap: 6px; }
 .popup-head b { font: 800 19px var(--display); flex: 1; }
 .popup-head .x { border: 0; box-shadow: none; background: none; font-size: 22px; padding: 0 4px; line-height: 1; }
-.popup-sub { color: var(--muted); font-size: 13px; text-transform: capitalize; margin-top: -4px; }
+.popup-sub { color: var(--muted); font-size: 13px; margin-top: -4px; }
+.popup-sub::first-letter { text-transform: uppercase; }
 .popup-here { display: flex; gap: 10px; flex-wrap: wrap; font-weight: 700; font-size: 13px; }
 .popup-here span { display: inline-flex; align-items: center; gap: 3px; }
 .popup-move { display: flex; flex-direction: column; gap: 4px; background: rgba(59, 36, 24, .06); border-radius: 10px; padding: 8px; }
@@ -216,3 +217,15 @@ button.link:active { transform: none; }
   .g-dots { order: -1; flex-basis: 100%; }
   .g-foot > button { flex: 1; }
 }
+.popup-rule { font-size: 12.5px; background: rgba(59, 36, 24, .07); border-radius: 8px; padding: 5px 8px; line-height: 1.35; }
+
+/* map picker */
+.map-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 8px; }
+.map-card { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left; padding: 8px; box-shadow: none; }
+.map-card b { font: 800 15px/1.15 var(--display); }
+.map-card small { font-size: 11.5px; color: var(--muted); line-height: 1.25; }
+.map-card.on { background: #f6d9a8; box-shadow: 0 0 0 3px var(--accent); }
+.map-card:disabled { opacity: .45; }
+.map-swatch { width: 100%; height: 30px; border-radius: 7px; border: 2px solid var(--line); display: flex; align-items: center; padding: 0 8px; }
+.map-season { font: 800 12px var(--display); background: rgba(255, 255, 255, .85); border-radius: 99px; padding: 0 8px; }
+.season .map-name { color: var(--accent); font-weight: 700; text-transform: none; }

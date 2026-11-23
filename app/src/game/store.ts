@@ -1,7 +1,7 @@
 // One store for the whole game: the engine state, who you are, what's selected on the map, the move feed,
 // and, when playing online, the Firestore room the state lives in.
 import { create } from 'zustand';
-import { AI, E, R, type Action, type Battle, type Faction, type Level, type State } from './engine';
+import { AI, E, R, selectMap, type Action, type Battle, type Faction, type Level, type MapKey, type State } from './engine';
 import { AI_NAMES, describe } from './text';
 import { tokenLayout } from './board';
 import type { Room, Seat } from '../net/rooms';
@@ -43,6 +43,8 @@ interface GameStore {
   land(id: number): void;
   guideOpen: boolean;
   setGuide(open: boolean): void;
+  mapPick: MapKey;
+  pickMap(k: MapKey): void;
   start(f: Faction, players: number, level: Level): void;
   quit(): void;
   act(a: Action): void;
@@ -107,11 +109,13 @@ export const useGame = create<GameStore>((set, get) => {
     land(id) { if (get().flight?.id === id) set({ flight: null }); },
     guideOpen: false,
     setGuide(open) { set({ guideOpen: open }); },
+    mapPick: (E.MAP_KEYS as string[]).includes(ls.get('tw-map') || '') ? ls.get('tw-map') as MapKey : 'autumn',
+    pickMap(k) { set({ mapPick: k }); ls.set('tw-map', k); },
     start(f, players, level) {
       const others = E.FACTION_KEYS.filter(x => x !== f).sort(() => Math.random() - 0.5).slice(0, players - 1);
       const seats = [f, ...others].sort((a, b) => E.FACTION_KEYS.indexOf(a) - E.FACTION_KEYS.indexOf(b))
         .map(x => ({ faction: x, name: x === f ? 'You' : AI_NAMES[x], ai: x !== f }));
-      set({ mode: 'solo', game: E.newGame(seats), me: f, level, selected: null, feed: [], banner: null, battle: null, guideOpen: firstGame() });
+      set({ mode: 'solo', game: E.newGame(seats, get().mapPick), me: f, level, selected: null, feed: [], banner: null, battle: null, guideOpen: firstGame() });
     },
     quit() {
       unsub?.(); unsub = null;
@@ -153,7 +157,7 @@ export const useGame = create<GameStore>((set, get) => {
     startOnline() {
       const r = get().room; if (!r) return;
       if (r.seats.some(s => s.type === 'open')) return set({ netError: 'Some seats are still open. Wait for friends, switch them to AI, or remove them.' });
-      get().editRoom(g => Object.assign(g, { status: 'playing', gid: newGid(), state: E.newGame(toPlayers(g.seats)), last: null }));
+      get().editRoom(g => Object.assign(g, { status: 'playing', gid: newGid(), state: E.newGame(toPlayers(g.seats), g.map), last: null }));
     },
   };
 });
@@ -161,4 +165,8 @@ export const useGame = create<GameStore>((set, get) => {
 // Derived helpers used by several components.
 export const isMyTurn = (g: State | null, me: Faction | null) => !!g && !!me && g.phase !== 'over' && g.players[g.current].faction === me;
 export const myActions = (g: State | null, me: Faction | null) => (isMyTurn(g, me) ? E.listActions(g!, me!) : []);
+// Keep the on-screen map in step with the game being shown, or with the map picked on the start screen or in the lobby.
+const syncMap = (s: GameStore) => selectMap(s.game?.map || (s.mode === 'online' ? s.room?.map : s.mapPick));
+syncMap(useGame.getState());
+useGame.subscribe(syncMap);
 export const isHost = (s: { room: Room | null; uid: string | null }) => !!s.room && s.room.hostId === s.uid;

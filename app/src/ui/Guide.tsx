@@ -1,7 +1,7 @@
 // How to play: a paged guide covering the rules, the three phases, each faction in the game, and the controls.
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { E, type Faction } from '../game/engine';
+import { E, MAP, type Faction } from '../game/engine';
 import { PHASES } from '../game/phases';
 import { useGame } from '../game/store';
 import { Emblem } from './Emblem';
@@ -36,6 +36,11 @@ function pages(facs: Faction[], me: Faction | null) {
         <Tile icon={<Icon id="c-rally" />} title="Cards">Cards pay terrain costs and have effects. Ambush cards defend you by themselves. You can hold 5.</Tile>
       </div>
     </> },
+    ...(MAP.rule ? [{ t: `This map: ${MAP.name}`, h: <>
+      <p className="g-lede">Every map has its own clearings, river and one special rule.</p>
+      <div className="g-grid"><Tile icon={<Icon id="i-star" />} title="Special rule">{MAP.ruleText}</Tile>
+        <Tile icon={<Icon id="i-move" />} title="Where to look">Special clearings carry a round badge on the map. Tap one to read its rule.</Tile></div>
+    </> }] : []),
     { t: 'Every turn has three phases', h: <>
       <p className="g-lede">Each turn runs <b>Dawn → Day → Dusk</b>. What happens in each phase depends on the faction.</p>
       <div className="g-three">

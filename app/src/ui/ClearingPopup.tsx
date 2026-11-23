@@ -1,7 +1,7 @@
 // Action popup anchored beside the selected clearing. It follows the clearing while the map pans or zooms.
 import { autoUpdate, flip, offset, shift, useFloating, FloatingPortal } from '@floating-ui/react';
 import { motion } from 'motion/react';
-import { E, R, type Action } from '../game/engine';
+import { E, MAP, R, type Action } from '../game/engine';
 import { myActions, useGame } from '../game/store';
 import { BUILD_NAME, short } from '../game/text';
 import { Emblem } from './Emblem';
@@ -47,7 +47,10 @@ export function ClearingPopup({ r, anchor }: { r: number; anchor: Element | null
           <b>{c.name}</b>
           <button className="x" aria-label="Close" onClick={() => select(null)}>×</button>
         </div>
-        <div className="popup-sub">{c.terrain}{E.RIVERSIDE[r] ? ' · on the river' : ''} · {rl ? `ruled by ${short(rl)}` : 'nobody rules'}</div>
+        <div className="popup-sub">{c.terrain}{MAP.riverside[r] ? ' · on the river' : ''} · {rl ? `ruled by ${short(rl)}` : 'nobody rules'}</div>
+        {MAP.blossoms?.includes(r) && <div className="popup-rule">🌸 Blossom: in meadow season, whoever rules it gains 2 renown at the end of their turn.</div>}
+        {MAP.fair === r && <div className="popup-rule">🎪 Summer Fair: whoever rules it draws 1 extra card at the end of their turn.</div>}
+        {MAP.dens?.includes(r) && <div className="popup-rule">❄️ Snug den: no battles can happen here.</div>}
         {here.length > 0 && (
           <div className="popup-here">
             {here.map(p => (

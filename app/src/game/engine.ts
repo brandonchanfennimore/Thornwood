@@ -17,7 +17,7 @@ export interface Battle {
 }
 export interface State {
   players: Player[]; regions: RegionState[]; deck: Card[]; discard: Card[];
-  current: number; round: number; phase: 'main' | 'discard' | 'over'; actionsLeft: number;
+  map?: MapKey; current: number; round: number; phase: 'main' | 'discard' | 'over'; actionsLeft: number;
   flags: Record<string, boolean>; log: string[]; logN?: number; winner: Faction | null; lastBattle: Battle | null; seq: number;
 }
 export interface Action {
@@ -25,13 +25,21 @@ export interface Action {
   label?: string; card?: number; region?: number; from?: number; to?: number; target?: Faction; max?: number; count?: number;
 }
 export interface RegionDef { name: string; terrain: Terrain; slots: number; x: number; y: number }
+export type MapKey = 'autumn' | 'spring' | 'summer' | 'winter';
+export interface MapDef {
+  key: MapKey; name: string; rule: 'blossom' | 'fair' | 'dens' | null; ruleText: string;
+  regions: RegionDef[]; edges: [number, number][]; river: [number, number][]; adj: number[][]; riverside: boolean[];
+  riverIn: { x: number; y: number; to: number }; riverOut: { from: number; x: number; y: number };
+  blossoms?: number[]; fair?: number; dens?: number[];
+}
 export interface FactionDef { name: string; short: string; color: string; critters: number; building: string | null; maxB: number; start: number }
 
 interface EngineAPI {
+  MAPS: Record<MapKey, MapDef>; MAP_KEYS: MapKey[]; mapOf(s: State): MapDef;
   TERRAINS: Terrain[]; REGIONS: RegionDef[]; EDGES: [number, number][]; RIVER: [number, number][]; ADJ: number[][]; RIVERSIDE: boolean[];
   FACTIONS: Record<Faction, FactionDef>; FACTION_KEYS: Faction[]; CARD_TYPES: Record<CardType, { name: string; text: string }>;
   WIN: number; MAX_ROUNDS: number; HAND_LIMIT: number;
-  newGame(seats: { faction: Faction; name: string; ai: boolean }[]): State;
+  newGame(seats: { faction: Faction; name: string; ai: boolean }[], map?: MapKey): State;
   listActions(s: State, f: Faction): Action[];
   apply(s: State, f: Faction, a: Action): State;
   ruler(s: State, r: number): Faction | null;
@@ -51,4 +59,8 @@ interface EngineAPI {
 const w = window as unknown as { Engine: EngineAPI; ThornAI: { chooseAction(s: State, f: Faction, level: Level): Action | null } };
 export const E = w.Engine;
 export const AI = w.ThornAI;
-export const R = E.REGIONS;
+// The map on screen. Only one game shows at a time, so the store switches this whenever the game (or the map picked on
+// the start screen) changes, and the UI reads MAP and R directly. ES module bindings are live, so importers see the switch.
+export let MAP: MapDef = E.MAPS.autumn;
+export let R: RegionDef[] = MAP.regions;
+export function selectMap(key: MapKey | undefined) { const m = E.MAPS[key || 'autumn'] || E.MAPS.autumn; if (m !== MAP) { MAP = m; R = m.regions; } }

@@ -5,6 +5,7 @@ import { E, type Faction, type Level } from '../game/engine';
 import { isHost, useGame } from '../game/store';
 import { AI_NAMES } from '../game/text';
 import { Emblem } from './Emblem';
+import { MapPicker } from './MapPicker';
 
 export function Lobby() {
   const room = useGame(s => s.room), uid = useGame(s => s.uid), host = useGame(isHost);
@@ -45,6 +46,7 @@ export function Lobby() {
             );
           })}
         </div>
+        <div><span className="lbl">Map</span><MapPicker value={room.map || 'autumn'} disabled={!host} onChange={k => editRoom(g => { g.map = k; })} /></div>
         {host && <div className="setup-row">
           <button disabled={room.seats.length >= 4} onClick={() => editRoom(g => { g.seats.push({ type: 'ai', faction: E.FACTION_KEYS.find(f => !g.seats.some(x => x.faction === f))! }); })}>+ Add a seat</button>
           <div><span className="lbl">AI difficulty</span><div className="seg">{(['easy', 'medium', 'hard'] as const).map(x => <button key={x} className={(room.level || 'medium') === x ? 'on' : ''} onClick={() => editRoom(g => { g.level = x as Level; })}>{x[0].toUpperCase() + x.slice(1)}</button>)}</div></div>

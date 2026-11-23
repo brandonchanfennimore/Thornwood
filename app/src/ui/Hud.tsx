@@ -1,5 +1,5 @@
 // Player stats floating along the top of the map.
-import { E, type Player, type State } from '../game/engine';
+import { E, MAP, type Player, type State } from '../game/engine';
 import { useGame } from '../game/store';
 import { Emblem } from './Emblem';
 
@@ -42,7 +42,7 @@ export function Hud() {
         })}
       </div>
       <div className="hud-r">
-        <div className="season">Round {game.round}<small>{E.season(game)} season</small></div>
+        <div className="season" title={`${MAP.name}: ${MAP.ruleText}`}>Round {game.round}<small>{E.season(game)} season</small><small className="map-name">{MAP.name}</small></div>
         <button className="help" aria-label="How to play" title="How to play" onClick={() => setGuide(true)}>?</button>
       </div>
     </div>

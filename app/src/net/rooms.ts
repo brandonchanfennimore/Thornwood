@@ -3,7 +3,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { doc, getFirestore, onSnapshot, runTransaction, setDoc, type Firestore } from 'firebase/firestore';
-import type { Action, Faction, Level, State } from '../game/engine';
+import type { Action, Faction, Level, MapKey, State } from '../game/engine';
 
 // These values are meant to be public; the Firestore rules protect the data. Same project as web/firebase-config.js.
 const config = {
@@ -18,7 +18,7 @@ const config = {
 export interface Seat { faction: Faction; type: 'human' | 'ai' | 'open'; uid?: string; name?: string }
 export interface Room {
   code: string; hostId: string; status: 'lobby' | 'playing'; rev: number; seats: Seat[];
-  level?: Level; gid?: string; state: State | null; last: { seq: number; f: Faction; a: Action } | null;
+  level?: Level; map?: MapKey; gid?: string; state: State | null; last: { seq: number; f: Faction; a: Action } | null;
 }
 
 let ready: Promise<{ db: Firestore; uid: string }> | null = null;
@@ -42,7 +42,7 @@ const newCode = () => Array.from({ length: 4 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ'
 export async function createRoom(name: string): Promise<string> {
   const { db, uid } = await connect();
   const code = newCode();
-  const room: Room = { code, hostId: uid, status: 'lobby', rev: 1, seats: [{ faction: 'badger', type: 'human', uid, name }, { faction: 'owl', type: 'ai' }], level: 'medium', state: null, last: null };
+  const room: Room = { code, hostId: uid, status: 'lobby', rev: 1, seats: [{ faction: 'badger', type: 'human', uid, name }, { faction: 'owl', type: 'ai' }], level: 'medium', map: 'autumn', state: null, last: null };
   try { await setDoc(doc(db, 'games', code), room); } catch (e) { throw friendly(e); }
   return code;
 }

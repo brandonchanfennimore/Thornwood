@@ -668,30 +668,80 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
   'use strict';
 
   const TERRAINS = ['meadow', 'marsh', 'grove'];
-  const REGIONS = [
-    { name: 'Oakhollow',   terrain: 'grove',  slots: 2, x: 120, y: 110 },
-    { name: 'Fernbank',    terrain: 'marsh',  slots: 1, x: 350, y: 85 },
-    { name: 'Thistledown', terrain: 'meadow', slots: 2, x: 590, y: 105 },
-    { name: 'Brambleside', terrain: 'grove',  slots: 1, x: 860, y: 100 },
-    { name: 'Mossmere',    terrain: 'marsh',  slots: 2, x: 215, y: 300 },
-    { name: 'Stonecrop',   terrain: 'meadow', slots: 2, x: 450, y: 275 },
-    { name: 'Reedwater',   terrain: 'marsh',  slots: 2, x: 690, y: 290 },
-    { name: 'Hazelden',    terrain: 'meadow', slots: 1, x: 905, y: 330 },
-    { name: 'Willowmere',  terrain: 'grove',  slots: 2, x: 100, y: 520 },
-    { name: 'Cloverfield', terrain: 'meadow', slots: 1, x: 330, y: 495 },
-    { name: 'Mirefen',     terrain: 'marsh',  slots: 1, x: 570, y: 470 },
-    { name: 'Ashgrove',    terrain: 'grove',  slots: 2, x: 830, y: 540 },
-    { name: 'Lowmeadow',   terrain: 'meadow', slots: 2, x: 480, y: 640 },
-  ];
-  const EDGES = [
-    [0, 1], [0, 4], [1, 2], [1, 4], [1, 5], [2, 3], [2, 5], [2, 6], [3, 6], [3, 7],
-    [4, 5], [4, 8], [4, 9], [5, 6], [5, 9], [5, 10], [6, 7], [6, 10], [6, 11], [7, 11],
-    [8, 9], [9, 10], [9, 12], [10, 11], [10, 12], [11, 12],
-  ];
-  const RIVER = [[1, 5], [4, 5], [5, 10], [6, 10], [10, 12]];
-  const ADJ = REGIONS.map((_, i) => EDGES.filter(e => e.includes(i)).map(e => (e[0] === i ? e[1] : e[0])));
+  // ---------- maps ----------
+  // Each map has its own clearings, paths, river, starting clearings and one special rule.
+  // river: the clearing-to-clearing river paths; riverIn / riverOut: where the river enters and leaves the board (for drawing).
+  const R = (name, terrain, slots, x, y) => ({ name, terrain, slots, x, y });
+  const MAPS = {
+    autumn: {
+      name: 'Autumn Thornwood', rule: null, ruleText: 'The classic map. No special rule.',
+      regions: [
+        R('Oakhollow', 'grove', 2, 120, 110), R('Fernbank', 'marsh', 1, 350, 85), R('Thistledown', 'meadow', 2, 590, 105), R('Brambleside', 'grove', 1, 860, 100),
+        R('Mossmere', 'marsh', 2, 215, 300), R('Stonecrop', 'meadow', 2, 450, 275), R('Reedwater', 'marsh', 2, 690, 290), R('Hazelden', 'meadow', 1, 905, 330),
+        R('Willowmere', 'grove', 2, 100, 520), R('Cloverfield', 'meadow', 1, 330, 495), R('Mirefen', 'marsh', 1, 570, 470), R('Ashgrove', 'grove', 2, 830, 540),
+        R('Lowmeadow', 'meadow', 2, 480, 640),
+      ],
+      edges: [[0, 1], [0, 4], [1, 2], [1, 4], [1, 5], [2, 3], [2, 5], [2, 6], [3, 6], [3, 7], [4, 5], [4, 8], [4, 9], [5, 6], [5, 9], [5, 10], [6, 7], [6, 10], [6, 11], [7, 11], [8, 9], [9, 10], [9, 12], [10, 11], [10, 12], [11, 12]],
+      river: [[1, 5], [4, 5], [5, 10], [6, 10], [10, 12]], riverIn: { x: 330, y: -14, to: 1 }, riverOut: { from: 12, x: 470, y: 780 },
+      starts: { badger: 0, rabbit: 3, owl: 8, otter: 12, fox: 2, hedgehog: 4, frog: 10, mole: 9 }, rabbit2: 7,
+    },
+    spring: {
+      name: 'Blossom Vale', rule: 'blossom', ruleText: 'Blossoms: in meadow season, gain 2 renown at the end of your turn for each blossoming clearing you rule.',
+      regions: [
+        R('Dewmeadow', 'meadow', 2, 150, 100), R('Primrose Hill', 'grove', 1, 420, 90), R('Larkspur Rise', 'meadow', 2, 680, 100), R('Cherry Orchard', 'grove', 2, 885, 250),
+        R('Frogspawn Pool', 'marsh', 2, 115, 318), R('Bluebell Hollow', 'grove', 1, 365, 290), R('Catkin Ford', 'marsh', 2, 625, 300), R('Cowslip Green', 'meadow', 1, 890, 450),
+        R('Rainmere', 'marsh', 2, 220, 505), R('Tadpole Reach', 'marsh', 2, 480, 495), R('Hawthorn Lane', 'grove', 2, 735, 560), R('Buttercup Field', 'meadow', 2, 345, 670),
+        R('Snowdrop Dell', 'meadow', 1, 580, 670),
+      ],
+      edges: [[0, 1], [0, 4], [1, 2], [1, 5], [2, 3], [2, 6], [3, 6], [3, 7], [4, 5], [4, 8], [5, 6], [5, 8], [5, 9], [6, 7], [6, 9], [6, 10], [7, 10], [8, 9], [8, 11], [9, 10], [9, 11], [9, 12], [10, 12], [11, 12]],
+      river: [[4, 5], [5, 6], [6, 3], [6, 9], [9, 8]], riverIn: { x: -14, y: 420, to: 4 }, riverOut: { from: 3, x: 1010, y: 330 },
+      starts: { badger: 0, rabbit: 11, owl: 8, otter: 3, fox: 6, hedgehog: 4, frog: 9, mole: 12 }, rabbit2: 1,
+      blossoms: [5, 10],
+    },
+    summer: {
+      name: 'Sunfire Steppe', rule: 'fair', ruleText: 'Summer Fair: whoever rules the Fairground draws 1 extra card at the end of their turn.',
+      regions: [
+        R('Sunridge', 'meadow', 2, 140, 110), R('Poppy Bank', 'meadow', 1, 400, 90), R('Haymow', 'grove', 2, 660, 95), R('Hornet Hollow', 'grove', 1, 900, 150),
+        R('Dryreed Marsh', 'marsh', 2, 120, 350), R('Thornbrake', 'grove', 2, 330, 280), R('Fairground', 'meadow', 2, 520, 390), R('Lark Meadow', 'meadow', 2, 745, 300),
+        R('Shallow Creek', 'marsh', 1, 920, 430), R('Sandy Bend', 'marsh', 2, 270, 565), R('Beehive Glade', 'grove', 1, 525, 625), R('Clover Patch', 'meadow', 2, 785, 575),
+        R('Mill Pond', 'marsh', 2, 110, 670),
+      ],
+      edges: [[0, 1], [0, 4], [0, 5], [1, 2], [1, 5], [2, 3], [2, 7], [3, 7], [3, 8], [4, 5], [4, 9], [4, 12], [5, 6], [6, 7], [6, 9], [6, 10], [6, 11], [7, 8], [8, 11], [9, 10], [9, 12], [10, 11]],
+      river: [[8, 11], [11, 10], [10, 9], [9, 12], [10, 6]], riverIn: { x: 1010, y: 300, to: 8 }, riverOut: { from: 12, x: -14, y: 770 },
+      starts: { badger: 0, rabbit: 2, owl: 4, otter: 11, fox: 5, hedgehog: 3, frog: 8, mole: 10 }, rabbit2: 12,
+      fair: 6,
+    },
+    winter: {
+      name: 'Frostfell', rule: 'dens', ruleText: 'Snug dens: no battles can happen in the two den clearings.',
+      regions: [
+        R('Icicle Ridge', 'grove', 2, 150, 110), R('Snowberry Field', 'meadow', 1, 420, 100), R('Frostmere', 'marsh', 2, 690, 120), R('Pinecrest', 'grove', 2, 905, 245),
+        R('Hollow Oak', 'grove', 1, 215, 330), R('Wintersett', 'meadow', 2, 480, 300), R('Glimmer Pond', 'marsh', 1, 740, 370), R('Rimefen', 'marsh', 2, 95, 540),
+        R('Holly Thicket', 'grove', 2, 350, 500), R('Sledge Hill', 'meadow', 1, 640, 545), R('Starlight Glade', 'grove', 2, 870, 565), R('Drift Hollow', 'marsh', 2, 215, 670),
+        R('Hearthstone', 'meadow', 2, 500, 670),
+      ],
+      edges: [[0, 1], [0, 4], [1, 2], [1, 5], [2, 3], [2, 5], [2, 6], [3, 6], [3, 10], [4, 5], [4, 7], [4, 8], [5, 6], [5, 8], [5, 9], [6, 9], [6, 10], [7, 8], [7, 11], [8, 9], [8, 11], [8, 12], [9, 10], [9, 12], [11, 12]],
+      river: [[2, 5], [5, 8], [8, 11]], riverIn: { x: 900, y: -14, to: 2 }, riverOut: { from: 11, x: 180, y: 780 },
+      starts: { badger: 0, rabbit: 12, owl: 10, otter: 2, fox: 6, hedgehog: 7, frog: 11, mole: 1 }, rabbit2: 3,
+      dens: [4, 9],
+    },
+  };
+  const MAP_KEYS = Object.keys(MAPS);
+  const COMPILED = {};
+  for (const k of MAP_KEYS) {
+    const m = MAPS[k], n = m.regions.length;
+    const adj = m.regions.map((_, i) => m.edges.filter(e => e.includes(i)).map(e => (e[0] === i ? e[1] : e[0])));
+    COMPILED[k] = { key: k, ...m, adj, riverside: m.regions.map((_, i) => m.river.some(e => e.includes(i))), n };
+  }
+  // The engine's rules read these through the current map. Every exported function that takes a game state
+  // switches to that game's map first (see api below), so they always match the state being worked on.
+  // ponytail: module-level "current map" instead of threading the map through ~40 call sites; fine while calls are synchronous.
+  let M = COMPILED.autumn, REGIONS = M.regions, EDGES = M.edges, RIVER = M.river, ADJ = M.adj, RIVERSIDE = M.riverside;
+  function use(s) {
+    const m = COMPILED[(s && s.map) || 'autumn'] || COMPILED.autumn;
+    if (m !== M) { M = m; REGIONS = m.regions; EDGES = m.edges; RIVER = m.river; ADJ = m.adj; RIVERSIDE = m.riverside; }
+    return m;
+  }
   const isRiver = (a, b) => RIVER.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
-  const RIVERSIDE = REGIONS.map((_, i) => RIVER.some(e => e.includes(i)));
 
   const FACTIONS = {
     badger: { name: 'Badger Clans',   short: 'Badgers', color: '#4b4f58', critters: 20, building: 'sett', maxB: 6, start: 0 },
@@ -816,24 +866,27 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
   }
 
   // ---------- setup & turn flow ----------
-  function newGame(seats) {
+  function newGame(seats, mapKey) {
+    const map = MAPS[mapKey] ? mapKey : 'autumn';
+    use({ map });
     const s = {
+      map,
       players: seats.map(x => ({ faction: x.faction, name: x.name, ai: !!x.ai, renown: 0, hand: [], stone: 0, coins: 0 })),
       regions: REGIONS.map(() => ({ c: {}, b: [] })),
       deck: buildDeck(), discard: [], current: 0, round: 1, phase: 'main',
       actionsLeft: 0, flags: {}, log: [], winner: null, lastBattle: null, seq: 0,
     };
     for (const p of s.players) {
-      const f = p.faction, st = FACTIONS[f].start;
+      const f = p.faction, st = M.starts[f];
       if (f === 'badger') { s.regions[st].b.push('badger'); place(s, st, f, 2); for (const a of ADJ[st]) place(s, a, f, 1); }
-      if (f === 'rabbit') { place(s, st, f, 4); place(s, 7, f, 2); }
+      if (f === 'rabbit') { place(s, st, f, 4); place(s, M.rabbit2, f, 2); }
       if (f === 'owl') { s.regions[st].b.push('owl'); place(s, st, f, 3); }
       if (f === 'otter') { s.regions[st].b.push('otter'); place(s, st, f, 3); p.coins = 2; }
       if (f === 'fox') place(s, st, f, 4);
       if (f === 'hedgehog' || f === 'frog' || f === 'mole') { s.regions[st].b.push(f); place(s, st, f, 3); }
       draw(s, p, 4);
     }
-    log(s, 'The war for Thornwood begins. First to 30 renown wins.');
+    log(s, `The war for ${M.name} begins. First to 30 renown wins.`);
     startTurn(s);
     return s;
   }
@@ -857,7 +910,7 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
       const inc = 1 + buildingsOnMap(s, f); p.coins = Math.min(12, p.coins + inc);
       log(s, `Otters collect ${inc} coins.`);
     } else if (f === 'fox') {
-      let r = FACTIONS.fox.start, most = 0;
+      let r = M.starts.fox, most = 0;
       for (let i = 0; i < REGIONS.length; i++) if (critters(s, i, f) > most) { most = critters(s, i, f); r = i; }
       const n = place(s, r, f, 2); s.actionsLeft = 3;
       log(s, `Foxes prowl: +${n} in ${REGIONS[r].name}.`);
@@ -904,6 +957,9 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
       const n = s.regions.reduce((k, R, i) => k + (REGIONS[i].terrain === season(s) ? R.b.filter(b => b === f).length : 0), 0);
       gain(s, f, n + Math.floor(buildingsOnMap(s, f) / 2), 'tunnels');
     }
+    // map rules
+    if (M.rule === 'blossom' && season(s) === 'meadow') gain(s, f, 2 * M.blossoms.filter(r => rules(s, f, r)).length, 'blossoms');
+    if (M.rule === 'fair' && rules(s, f, M.fair)) { d++; log(s, `${fname(f)} hold the Summer Fair: +1 card.`); }
     if (s.phase === 'over') return;
     const got = draw(s, p, d);
     log(s, `${fname(f)} draw ${got} card${got === 1 ? '' : 's'}.`);
@@ -971,7 +1027,7 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
     }
     if (canPay(s, p, 'fight')) {
       for (let r = 0; r < N; r++) {
-        if (!critters(s, r, f)) continue;
+        if (!critters(s, r, f) || (M.rule === 'dens' && M.dens.includes(r))) continue;
         for (const q of s.players) if (q.faction !== f && pieces(s, r, q.faction) > 0)
           out.push({ type: 'fight', region: r, target: q.faction, label: `Attack ${fname(q.faction)} in ${RN(r)}` });
       }
@@ -1154,12 +1210,19 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
     return v;
   }
 
+  // The current map for a game state: clearings, paths, river, rule. Old states without a map are Autumn.
+  const mapOf = s => COMPILED[(s && s.map) || 'autumn'] || COMPILED.autumn;
   const api = {
+    MAPS: COMPILED, MAP_KEYS, mapOf,
     TERRAINS, REGIONS, EDGES, RIVER, ADJ, RIVERSIDE, FACTIONS, FACTION_KEYS, CARD_TYPES, WIN, MAX_ROUNDS, HAND_LIMIT,
     SETT_COST, SETT_VP, OTTER_COST, OWL_NEST_VP, handLimit, chorus, wet,
     newGame, listActions, apply, viewFor, ruler, rules, critters, buildingsOf, pieces, supply, buildingsOnMap,
     ruledCount, season, isRiver, within2, cardName, freeSlots, P,
   };
+  // Functions that take a game state first switch the rules to that game's map.
+  for (const k of ['listActions', 'apply', 'viewFor', 'ruler', 'rules', 'critters', 'buildingsOf', 'pieces', 'supply', 'buildingsOnMap', 'ruledCount', 'season', 'freeSlots', 'chorus']) {
+    const fn = api[k]; api[k] = (s, ...a) => { use(s); return fn(s, ...a); };
+  }
   root.Engine = api; if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -1171,13 +1234,13 @@ const KEEP = { moon: 5, ambush: 4, forage: 3, rally: 2, provision: 2, hasten: 1 
 
 function enemyNear(s, f, r) {
   let n = 0;
-  for (const a of [r, ...E.ADJ[r]]) for (const p of s.players) if (p.faction !== f) n += E.critters(s, a, p.faction);
+  for (const a of [r, ...E.mapOf(s).adj[r]]) for (const p of s.players) if (p.faction !== f) n += E.critters(s, a, p.faction);
   return n;
 }
 function dice(s, f, r, n) { return f === 'owl' ? Math.min(4, n * 2) : Math.min(3, n); }
 
 function scoreAction(s, f, a) {
-  const p = E.P(s, f), R = E.REGIONS, card = a.card ? p.hand.find(c => c.id === a.card) : null;
+  const p = E.P(s, f), MP = E.mapOf(s), R = MP.regions, card = a.card ? p.hand.find(c => c.id === a.card) : null;
   const canAct = f === 'otter' ? p.coins > 0 : s.actionsLeft > 0;
   switch (a.type) {
     case 'end': return 0.5;
@@ -1222,12 +1285,13 @@ function scoreAction(s, f, a) {
       const enemies = s.players.filter(q => q.faction !== f).reduce((k, q) => k + E.pieces(s, to, q.faction), 0);
       if (ruler !== f) v += 2;
       if (E.freeSlots(s, to) > 0 && E.FACTIONS[f].building) v += 1.5;
-      if (f === 'otter' && E.RIVERSIDE[to] && !E.buildingsOf(s, to, f)) v += 2;
+      if (f === 'otter' && MP.riverside[to] && !E.buildingsOf(s, to, f)) v += 2;
       if (f === 'otter' && ruler && ruler !== f) v += 0.5;
       if (f === 'rabbit' && R[to].terrain === E.season(s)) v += 2;
       if (f === 'fox' && !E.critters(s, to, f) && s.regions[to].b.some(b => b !== f)) v += 2.5;
-      if (f === 'frog' && E.wet(to)) v += 1 + (E.ADJ[to].some(x => E.rules(s, f, x)) ? 1 : 0);
+      if (f === 'frog' && (R[to].terrain === 'marsh' || MP.riverside[to])) v += 1 + (MP.adj[to].some(x => E.rules(s, f, x)) ? 1 : 0);
       if (f === 'rabbit' && R[to].terrain === ['meadow', 'marsh', 'grove'][s.round % 3]) v += 1;
+      if ((MP.blossoms || []).includes(to) || MP.fair === to) v += 1.5;
       if (enemies > n - keep + 1) v -= 3;
       if (ruler === f && E.critters(s, to, f) > 3) v -= 2;
       if (E.critters(s, a.from, f) - (n - keep) === 0 && E.ruler(s, a.from) === f && fromB) v -= 4;

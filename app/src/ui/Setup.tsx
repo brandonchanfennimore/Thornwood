@@ -5,12 +5,13 @@ import { E, type Faction, type Level } from '../game/engine';
 import { useGame } from '../game/store';
 import { BLURB } from '../game/text';
 import { Emblem } from './Emblem';
+import { MapPicker } from './MapPicker';
 
 const hashCode = () => (/^#[A-Z]{4}$/i.test(location.hash) ? location.hash.slice(1).toUpperCase() : '');
 
 export function Setup() {
   const start = useGame(s => s.start), create = useGame(s => s.create), join = useGame(s => s.join);
-  const setGuide = useGame(s => s.setGuide), name = useGame(s => s.name), setName = useGame(s => s.setName), netError = useGame(s => s.netError), busy = useGame(s => s.busy);
+  const mapPick = useGame(s => s.mapPick), pickMap = useGame(s => s.pickMap), setGuide = useGame(s => s.setGuide), name = useGame(s => s.name), setName = useGame(s => s.setName), netError = useGame(s => s.netError), busy = useGame(s => s.busy);
   const [tab, setTab] = useState<'solo' | 'online'>(hashCode() ? 'online' : 'solo');
   const [f, setF] = useState<Faction>('badger');
   const [n, setN] = useState(4);
@@ -33,6 +34,7 @@ export function Setup() {
               </button>
             ))}
           </div>
+          <div><span className="lbl">Map</span><MapPicker value={mapPick} onChange={pickMap} /></div>
           <div className="setup-row">
             <div><span className="lbl">Players</span><div className="seg">{[2, 3, 4].map(x => <button key={x} className={n === x ? 'on' : ''} onClick={() => setN(x)}>{x}</button>)}</div></div>
             <div><span className="lbl">AI difficulty</span><div className="seg">{(['easy', 'medium', 'hard'] as const).map(x => <button key={x} className={level === x ? 'on' : ''} onClick={() => setLevel(x)}>{x[0].toUpperCase() + x.slice(1)}</button>)}</div></div>

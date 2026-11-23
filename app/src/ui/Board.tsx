@@ -1,7 +1,7 @@
 // The whole page is the map: pan with a drag, zoom with the wheel or a pinch. Clearings open the action popup.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { E, R, type Faction } from '../game/engine';
+import { E, MAP, R, type Faction } from '../game/engine';
 import { MAP_H, MAP_W, MAP_X, MAP_Y, PIECE_H, slotPos, terrainSvg, tokenLayout } from '../game/board';
 import { FLIGHT_MS, FLIGHT_STAGGER, myActions, useGame, type Flight } from '../game/store';
 import { ClearingPopup } from './ClearingPopup';
@@ -17,7 +17,8 @@ export function Board() {
   const clearingEls = useRef<(SVGCircleElement | null)[]>([]);
   const [view, setView] = useState<View>({ x: 0, y: 0, k: 1 });
   const fitK = useRef(1);
-  const terrain = useMemo(terrainSvg, []);
+  const mapKey = useGame(s => s.game?.map || (s.mode === 'online' ? s.room?.map : s.mapPick) || 'autumn');
+  const terrain = useMemo(() => terrainSvg(E.MAPS[mapKey] || MAP), [mapKey]);
 
   // Fit the map between the stats bar and the hand, and refit when the window changes size.
   useLayoutEffect(() => {

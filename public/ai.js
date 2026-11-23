@@ -6,13 +6,13 @@ const KEEP = { moon: 5, ambush: 4, forage: 3, rally: 2, provision: 2, hasten: 1 
 
 function enemyNear(s, f, r) {
   let n = 0;
-  for (const a of [r, ...E.ADJ[r]]) for (const p of s.players) if (p.faction !== f) n += E.critters(s, a, p.faction);
+  for (const a of [r, ...E.mapOf(s).adj[r]]) for (const p of s.players) if (p.faction !== f) n += E.critters(s, a, p.faction);
   return n;
 }
 function dice(s, f, r, n) { return f === 'owl' ? Math.min(4, n * 2) : Math.min(3, n); }
 
 function scoreAction(s, f, a) {
-  const p = E.P(s, f), R = E.REGIONS, card = a.card ? p.hand.find(c => c.id === a.card) : null;
+  const p = E.P(s, f), MP = E.mapOf(s), R = MP.regions, card = a.card ? p.hand.find(c => c.id === a.card) : null;
   const canAct = f === 'otter' ? p.coins > 0 : s.actionsLeft > 0;
   switch (a.type) {
     case 'end': return 0.5;
@@ -57,12 +57,13 @@ function scoreAction(s, f, a) {
       const enemies = s.players.filter(q => q.faction !== f).reduce((k, q) => k + E.pieces(s, to, q.faction), 0);
       if (ruler !== f) v += 2;
       if (E.freeSlots(s, to) > 0 && E.FACTIONS[f].building) v += 1.5;
-      if (f === 'otter' && E.RIVERSIDE[to] && !E.buildingsOf(s, to, f)) v += 2;
+      if (f === 'otter' && MP.riverside[to] && !E.buildingsOf(s, to, f)) v += 2;
       if (f === 'otter' && ruler && ruler !== f) v += 0.5;
       if (f === 'rabbit' && R[to].terrain === E.season(s)) v += 2;
       if (f === 'fox' && !E.critters(s, to, f) && s.regions[to].b.some(b => b !== f)) v += 2.5;
-      if (f === 'frog' && E.wet(to)) v += 1 + (E.ADJ[to].some(x => E.rules(s, f, x)) ? 1 : 0);
+      if (f === 'frog' && (R[to].terrain === 'marsh' || MP.riverside[to])) v += 1 + (MP.adj[to].some(x => E.rules(s, f, x)) ? 1 : 0);
       if (f === 'rabbit' && R[to].terrain === ['meadow', 'marsh', 'grove'][s.round % 3]) v += 1;
+      if ((MP.blossoms || []).includes(to) || MP.fair === to) v += 1.5;
       if (enemies > n - keep + 1) v -= 3;
       if (ruler === f && E.critters(s, to, f) > 3) v -= 2;
       if (E.critters(s, a.from, f) - (n - keep) === 0 && E.ruler(s, a.from) === f && fromB) v -= 4;
