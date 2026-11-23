@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { E, R, type Faction } from '../game/engine';
 import { MAP_H, MAP_W, MAP_X, MAP_Y, PIECE_H, slotPos, terrainSvg, tokenLayout } from '../game/board';
-import { myActions, useGame } from '../game/store';
+import { FLIGHT_MS, FLIGHT_STAGGER, myActions, useGame, type Flight } from '../game/store';
 import { ClearingPopup } from './ClearingPopup';
 
 type View = { x: number; y: number; k: number };
@@ -100,7 +100,7 @@ export function Board() {
               </g>
             );
           })}
-          <g pointerEvents="none">{game && <Pieces />}</g>
+          <g pointerEvents="none">{game && <Pieces />}<Flyers /></g>
           <defs><marker id="arrowhead" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0 L10 5 L0 10Z" fill="#ffe27a" /></marker></defs>
         </g>
       </svg>
@@ -110,34 +110,60 @@ export function Board() {
 }
 
 function Pieces() {
-  const game = useGame(s => s.game)!;
+  const game = useGame(s => s.game)!, flight = useGame(s => s.flight);
   const items: React.ReactNode[] = [];
   R.forEach((c, r) => {
     for (let k = 0; k < c.slots; k++) {
       const { x, y } = slotPos(r, k), b = game.regions[r].b[k];
       if (!b) items.push(<rect key={`s-${r}-${k}`} x={x - 14} y={y - 14} width={28} height={28} rx={6} className="slot" />);
-      else items.push(<Pop key={`b-${r}-${k}-${b}`} x={x} y={y}><use href={`#b-${b}`} x={x - 15} y={y - 15} width={30} height={30} /></Pop>);
+      else items.push(<Pop key={`b-${r}-${k}-${b}`} id={`b-${r}-${k}-${b}`} x={x} y={y}><use href={`#b-${b}`} x={x - 15} y={y - 15} width={30} height={30} /></Pop>);
     }
     for (const t of tokenLayout(game, r)) {
       const h = PIECE_H[t.f as Faction] * 0.9;
       items.push(
-        <Pop key={t.key} x={t.x} y={t.y}>
+        <Pop key={t.key} id={t.key} x={t.x} y={t.y} hidden={!!flight?.landing.has(t.key)}>
           <use href={`#a-${t.f}`} x={t.x - 13} y={t.y - h / 2 - 4} width={26} height={h} />
           {t.extra > 0 && <><circle cx={t.x + 10} cy={t.y + 8} r={9} fill="#fff" stroke="#333" /><text x={t.x + 10} y={t.y + 12} textAnchor="middle" fontSize={11} fontWeight={800} fill="#222">{t.extra}</text></>}
         </Pop>,
       );
     }
   });
-  return <AnimatePresence>{items}</AnimatePresence>;
+  // Critters that just took off vanish at once (a flyer takes their place); everything else shrinks away.
+  return <AnimatePresence custom={flight?.leaving}>{items}</AnimatePresence>;
+}
+
+// Critters crossing the map: each one hops along an arc from its old spot to its new one, a beat after the last.
+function Flyers() {
+  const flight = useGame(s => s.flight), land = useGame(s => s.land);
+  useEffect(() => {
+    if (!flight) return;
+    const t = setTimeout(() => land(flight.id), FLIGHT_MS + FLIGHT_STAGGER * flight.paths.length + 60);
+    return () => clearTimeout(t);
+  }, [flight, land]);
+  if (!flight) return null;
+  return <>{flight.paths.map((p, i) => <Flyer key={`${flight.id}-${i}`} f={flight} p={p} delay={i * FLIGHT_STAGGER} />)}</>;
+}
+function Flyer({ f, p, delay }: { f: Flight; p: Flight['paths'][number]; delay: number }) {
+  const h = PIECE_H[f.f] * 0.9, lift = Math.min(90, 30 + Math.hypot(p.dx - p.sx, p.dy - p.sy) * 0.18);
+  return (
+    <motion.g initial={{ x: p.sx, y: p.sy }} animate={{ x: [p.sx, (p.sx + p.dx) / 2, p.dx], y: [p.sy, (p.sy + p.dy) / 2 - lift, p.dy] }}
+      transition={{ duration: FLIGHT_MS / 1000, delay: delay / 1000, ease: 'easeInOut', times: [0, 0.5, 1] }}>
+      <use href={`#a-${f.f}`} x={-13} y={-h / 2 - 4} width={26} height={h} />
+    </motion.g>
+  );
 }
 
 // Pieces pop in when they arrive and shrink away when they leave. The outer translate puts the scale origin on the piece.
-function Pop({ x, y, children }: { x: number; y: number; children: React.ReactNode }) {
+function Pop({ id, x, y, hidden = false, children }: { id: string; x: number; y: number; hidden?: boolean; children: React.ReactNode }) {
+  // A landing critter is already full size: it just turns visible when its flyer arrives.
+  const landing = useRef(hidden).current;
   return (
     <g transform={`translate(${x} ${y})`}>
       <motion.g style={{ transformBox: 'view-box', transformOrigin: '0px 0px' }}
-        initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0, opacity: 0 }}
-        transition={{ type: 'spring', stiffness: 420, damping: 22 }}>
+        variants={{ exit: (leaving?: Set<string>) => leaving?.has(id) ? { opacity: 0, transition: { duration: 0 } } : { scale: 0, opacity: 0 } }}
+        initial={landing ? { scale: 1, opacity: 0 } : { scale: 0, opacity: 0 }}
+        animate={hidden ? { scale: 1, opacity: 0 } : { scale: 1, opacity: 1 }} exit="exit"
+        transition={landing ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 22 }}>
         <g transform={`translate(${-x} ${-y})`}>{children}</g>
       </motion.g>
     </g>

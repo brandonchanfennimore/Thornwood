@@ -1,11 +1,26 @@
 // One store for the whole game: the engine state, who you are, what's selected on the map, the move feed,
 // and, when playing online, the Firestore room the state lives in.
 import { create } from 'zustand';
-import { AI, E, type Action, type Battle, type Faction, type Level, type State } from './engine';
+import { AI, E, R, type Action, type Battle, type Faction, type Level, type State } from './engine';
 import { AI_NAMES, describe } from './text';
+import { tokenLayout } from './board';
 import { connect, createRoom, joinRoom, saveRoom, watchRoom, type Room, type Seat } from '../net/rooms';
 
 export interface FeedItem { id: number; f: Faction | null; text: string }
+// Critters in the air during a move: where each one starts and lands, plus the token keys to hide until they land.
+export interface Flight { id: number; f: Faction; paths: { sx: number; sy: number; dx: number; dy: number }[]; leaving: Set<string>; landing: Set<string> }
+export const FLIGHT_MS = 850, FLIGHT_STAGGER = 70;
+function makeFlight(prev: State, next: State, f: Faction, from: number, to: number, n: number): Flight {
+  const a = tokenLayout(prev, from).filter(t => t.f === f), b = tokenLayout(next, to).filter(t => t.f === f);
+  const before = new Set(tokenLayout(prev, to).filter(t => t.f === f).map(t => t.key));
+  const after = new Set(tokenLayout(next, from).map(t => t.key));
+  const land = b.filter(t => !before.has(t.key)).slice(-n), lift = a.filter(t => !after.has(t.key)).slice(-n);
+  const k = Math.max(1, Math.min(n, Math.max(land.length, lift.length)));
+  const pick = <T,>(arr: T[], i: number, fb: T) => arr[i] ?? arr[arr.length - 1] ?? fb;
+  const src = { x: R[from].x, y: R[from].y, key: '' }, dst = { x: R[to].x, y: R[to].y, key: '' };
+  const paths = Array.from({ length: k }, (_, i) => { const s0 = pick(lift, i, src), d0 = pick(land, i, dst); return { sx: s0.x, sy: s0.y, dx: d0.x, dy: d0.y }; });
+  return { id: nextId++, f, paths, leaving: new Set(lift.map(t => t.key)), landing: new Set(land.map(t => t.key)) };
+}
 type Last = Room['last'];
 const NOTABLE = /gain \d+ renown|breed|gather|take wing|collect \d+|toll|ambush|win|run out|prowl|forage|spawn|surface/i;
 let nextId = 1;
@@ -20,7 +35,8 @@ interface GameStore {
   game: State | null; me: Faction | null; level: Level;
   room: Room | null; uid: string | null; name: string; netError: string; busy: boolean;
   selected: number | null; moveCount: number;
-  feed: FeedItem[]; banner: FeedItem | null; battle: Battle | null;
+  feed: FeedItem[]; banner: FeedItem | null; battle: Battle | null; flight: Flight | null;
+  land(id: number): void;
   start(f: Faction, players: number, level: Level): void;
   quit(): void;
   act(a: Action): void;
@@ -43,7 +59,9 @@ export const useGame = create<GameStore>((set, get) => {
     const head: FeedItem | null = last && last.seq === next.seq ? { id: nextId++, f: last.f, text: describe(prev, last.f, last.a) } : null;
     const extra = lines.filter(l => NOTABLE.test(l)).map(l => ({ id: nextId++, f: E.FACTION_KEYS.find(k => l.startsWith(E.FACTIONS[k].short)) || null, text: l }));
     const battle = last?.a.type === 'fight' && next.lastBattle?.seq === next.seq ? next.lastBattle : null;
-    set({ game: next, banner: head || get().banner, feed: [...extra.reverse(), ...(head ? [head] : []), ...get().feed].slice(0, 30), battle });
+    const a = last?.seq === next.seq ? last.a : null;
+    const flight = a?.type === 'move' && last ? makeFlight(prev, next, last.f, a.from!, a.to!, a.count || 1) : null;
+    set({ game: next, banner: head || get().banner, feed: [...extra.reverse(), ...(head ? [head] : []), ...get().feed].slice(0, 30), battle, flight });
   }
   // Apply one action for faction f. Solo: show it now. Online: write it, and the room snapshot shows it to everyone.
   function step(f: Faction, a: Action): boolean {
@@ -78,7 +96,8 @@ export const useGame = create<GameStore>((set, get) => {
   }
   return {
     mode: null, game: null, me: null, level: 'medium', room: null, uid: null, name: ls.get('tw-name') || '', netError: '', busy: false,
-    selected: null, moveCount: 1, feed: [], banner: null, battle: null,
+    selected: null, moveCount: 1, feed: [], banner: null, battle: null, flight: null,
+    land(id) { if (get().flight?.id === id) set({ flight: null }); },
     start(f, players, level) {
       const others = E.FACTION_KEYS.filter(x => x !== f).sort(() => Math.random() - 0.5).slice(0, players - 1);
       const seats = [f, ...others].sort((a, b) => E.FACTION_KEYS.indexOf(a) - E.FACTION_KEYS.indexOf(b))

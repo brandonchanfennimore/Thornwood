@@ -17,7 +17,8 @@ export default function App() {
   useEffect(() => {
     if (!game || game.phase === 'over' || !game.players[game.current].ai) return;
     if (mode === 'online' && !host && !seated) return;
-    const t = setTimeout(aiStep, mode === 'online' && !host ? 15000 : battle ? 2400 : 750);
+    const flying = !!useGame.getState().flight;
+    const t = setTimeout(aiStep, mode === 'online' && !host ? 15000 : battle ? 2400 : flying ? 1300 : 750);
     return () => clearTimeout(t);
   }, [game, battle, aiStep, mode, host, seated]);
   return (
