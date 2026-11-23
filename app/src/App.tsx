@@ -12,7 +12,8 @@ import { Guide } from './ui/Guide';
 
 export default function App() {
   const game = useGame(s => s.game), battle = useGame(s => s.battle), aiStep = useGame(s => s.aiStep);
-  const day = useGame(s => s.turnPhase === 'day'), speed = useGame(s => s.speed), guide = useGame(s => s.guideOpen), mode = useGame(s => s.mode), host = useGame(isHost), seated = useGame(s => !!s.me), netError = useGame(s => s.netError);
+  // AI acts in its Day, and also while it must discard down to its hand limit (shown as Dusk).
+  const day = useGame(s => s.turnPhase === 'day' || s.game?.phase === 'discard'), speed = useGame(s => s.speed), guide = useGame(s => s.guideOpen), mode = useGame(s => s.mode), host = useGame(isHost), seated = useGame(s => !!s.me), netError = useGame(s => s.netError);
   // AI players take one action at a time, with a pause so you can follow along (longer after a battle).
   // Online, the host's browser plays the AI. If the host goes quiet, any seated player takes over after 15 seconds.
   useEffect(() => {

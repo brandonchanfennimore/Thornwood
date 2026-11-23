@@ -215,3 +215,5 @@ syncMap(useGame.getState());
 applyLook(useGame.getState().look);
 useGame.subscribe(syncMap);
 export const isHost = (s: { room: Room | null; uid: string | null }) => !!s.room && s.room.hostId === s.uid;
+// Dev only: lets the browser console inspect and poke the game store. Stripped from production builds.
+if (import.meta.env.DEV) (window as unknown as { __tw: typeof useGame }).__tw = useGame;
