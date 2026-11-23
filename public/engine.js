@@ -495,5 +495,5 @@
     newGame, listActions, apply, viewFor, ruler, rules, critters, buildingsOf, pieces, supply, buildingsOnMap,
     ruledCount, season, isRiver, within2, cardName, freeSlots, P,
   };
-  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Engine = api;
+  root.Engine = api; if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

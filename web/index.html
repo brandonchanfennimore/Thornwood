@@ -1160,7 +1160,7 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
     newGame, listActions, apply, viewFor, ruler, rules, critters, buildingsOf, pieces, supply, buildingsOnMap,
     ruledCount, season, isRiver, within2, cardName, freeSlots, P,
   };
-  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Engine = api;
+  root.Engine = api; if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>// Thornwood — heuristic AI opponents (shared by server and browser)
@@ -1262,7 +1262,7 @@ function chooseAction(s, f, level) {
 }
 
 const api = { chooseAction };
-if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ThornAI = api;
+root.ThornAI = api; if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
 <script>// Thornwood — artifact client: illustrated board, physical pieces, card dock, and step-by-step playback of every move.

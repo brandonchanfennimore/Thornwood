@@ -1,6 +1,28 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "web", "runtimeExecutable": "python3", "runtimeArgs": ["-m", "http.server", "5173", "-d", "web"], "port": 5173 }
+    {
+      "name": "web",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5173",
+        "-d",
+        "web"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "app",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "app",
+        "run",
+        "dev"
+      ],
+      "port": 5180
+    }
   ]
 }

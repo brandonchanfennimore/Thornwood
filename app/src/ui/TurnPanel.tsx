@@ -1,0 +1,40 @@
+// Bottom-right: whose turn it is, what you have left, faction-wide actions, and End turn.
+import { E } from '../game/engine';
+import { isMyTurn, myActions, useGame } from '../game/store';
+import { Emblem } from './Emblem';
+
+const HINT: Record<string, string> = {
+  owl: 'Owls fly up to 2 clearings.', frog: 'Frogs leap up to 2 clearings into wet ground.',
+  mole: 'Moles travel between any two tunnels.', fox: 'Foxes ignore rule when they move.',
+};
+
+export function TurnPanel() {
+  const game = useGame(s => s.game)!, me = useGame(s => s.me)!, act = useGame(s => s.act), quit = useGame(s => s.quit), start = useGame(s => s.start), level = useGame(s => s.level);
+  const cur = game.players[game.current], mine = isMyTurn(game, me), acts = myActions(game, me), p = game.players.find(x => x.faction === me)!;
+  if (game.phase === 'over') {
+    const w = game.players.find(x => x.faction === game.winner)!;
+    return (
+      <div className="turn">
+        <div className="turn-who"><Emblem f={w.faction} size={44} /><div><b>{w.faction === me ? 'You win!' : `${w.name} wins`}</b><small>{E.FACTIONS[w.faction].name} · {w.renown} renown</small></div></div>
+        <button className="primary big" onClick={() => start(me, game.players.length, level)}>Play again</button>
+        <button className="ghost" onClick={quit}>Back to menu</button>
+      </div>
+    );
+  }
+  if (!mine) return (
+    <div className="turn">
+      <div className="turn-who"><Emblem f={cur.faction} size={44} /><div><b>{cur.name}</b><small>{E.FACTIONS[cur.faction].name} · taking their turn…</small></div></div>
+    </div>
+  );
+  const whole = acts.filter(a => a.type === 'muster' || a.type === 'hatch');
+  const end = acts.find(a => a.type === 'end');
+  return (
+    <div className="turn mine">
+      <div className="turn-who"><Emblem f={me} size={44} /><div><b>Your turn</b><small>{game.phase === 'discard' ? 'Discard down to the hand limit' : me === 'otter' ? `${p.coins} coins · Move 1 · Attack 2 · Hire 2 · Post 3` : `${game.actionsLeft} action${game.actionsLeft === 1 ? '' : 's'} left${me === 'badger' ? ` · ${p.stone} stone` : ''}`}</small></div></div>
+      {me !== 'otter' && game.phase === 'main' && <div className="pips">{Array.from({ length: Math.max(0, game.actionsLeft) }, (_, i) => <span key={i} />)}</div>}
+      {game.phase === 'main' && <p className="small muted">Tap a clearing with a gold ring to act there. {HINT[me] || ''}</p>}
+      {whole.map((a, i) => <button key={i} className="act" onClick={() => act(a)}><b>{a.type === 'muster' ? 'Muster' : 'Hatch'}</b><small>{a.type === 'muster' ? '+1 badger at every sett' : '+1 owl at every nest'}</small></button>)}
+      {end && <button className="primary big" onClick={() => act(end)}>End turn{me !== 'otter' && game.actionsLeft > 0 ? ` (${game.actionsLeft} unused)` : ''}</button>}
+    </div>
+  );
+}

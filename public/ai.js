@@ -97,5 +97,5 @@ function chooseAction(s, f, level) {
 }
 
 const api = { chooseAction };
-if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ThornAI = api;
+root.ThornAI = api; if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

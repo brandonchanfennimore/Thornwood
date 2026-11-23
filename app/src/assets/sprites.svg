@@ -1,0 +1,232 @@
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- artistic style: hand-drawn wobble for the map, paper grain on top of it -->
+    <filter id="rough" x="-2%" y="-2%" width="104%" height="104%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4"/><feDisplacementMap in="SourceGraphic" scale="5" xChannelSelector="R" yChannelSelector="G"/></filter>
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="9"/><feColorMatrix values="0 0 0 0 .23  0 0 0 0 .14  0 0 0 0 .07  0 0 0 -1.4 .9"/></filter>
+    <!-- artistic style critters: storybook heads with big eyes, wearing a cloak in their faction's color -->
+    <symbol id="a-badger" viewBox="-14 -17 28 32">
+      <ellipse cx="0" cy="12.5" rx="11" ry="2.6" fill="rgba(42,26,18,.35)"/>
+      <g stroke="#2a1a12" stroke-width="1.4" stroke-linejoin="round">
+        <circle cx="-8" cy="-9" r="3.6" fill="#5b544d"/><circle cx="8" cy="-9" r="3.6" fill="#5b544d"/>
+        <circle r="11" fill="#5b544d"/>
+        <path d="M-3.2 -10.8 Q0 -12 3.2 -10.8 L2.6 4 Q0 5.6 -2.6 4Z" fill="#f4ecdc" stroke-width="1"/>
+        <path d="M-10.6 4 Q0 10.5 10.6 4 Q9.6 11 0 11.6 Q-9.6 11 -10.6 4Z" fill="#7d8a9a"/>
+        <circle cx="-5" cy="-2.2" r="3.3" fill="#fff"/><circle cx="5" cy="-2.2" r="3.3" fill="#fff"/>
+      </g>
+      <circle cx="-4.4" cy="-2.8" r="1.6" fill="#2a1a12"/><circle cx="5.6" cy="-2.8" r="1.6" fill="#2a1a12"/>
+      <circle cx="-3.9" cy="-3.4" r=".55" fill="#fff"/><circle cx="6.1" cy="-3.4" r=".55" fill="#fff"/>
+      <ellipse cx="0" cy="2.6" rx="2.2" ry="1.4" fill="#2a1a12"/>
+    </symbol>
+    <symbol id="a-rabbit" viewBox="-14 -21 28 36">
+      <ellipse cx="0" cy="12.5" rx="11" ry="2.6" fill="rgba(42,26,18,.35)"/>
+      <g stroke="#2a1a12" stroke-width="1.4" stroke-linejoin="round">
+        <ellipse cx="-5" cy="-12" rx="3.5" ry="8.4" fill="#efd36a" transform="rotate(-14 -5 -12)"/>
+        <ellipse cx="5" cy="-12" rx="3.5" ry="8.4" fill="#efd36a" transform="rotate(10 5 -12)"/>
+        <ellipse cx="-5" cy="-12" rx="1.3" ry="5.6" fill="#f2a9a0" stroke="none" transform="rotate(-14 -5 -12)"/><ellipse cx="5" cy="-12" rx="1.3" ry="5.6" fill="#f2a9a0" stroke="none" transform="rotate(10 5 -12)"/>
+        <circle r="10.6" fill="#efd36a"/>
+        <path d="M-10.2 4 Q0 10.5 10.2 4 Q9.4 11 0 11.4 Q-9.4 11 -10.2 4Z" fill="#d9772b"/>
+        <circle cx="-4.6" cy="-2.4" r="3.4" fill="#fff"/><circle cx="4.6" cy="-2.4" r="3.4" fill="#fff"/>
+      </g>
+      <circle cx="-4.2" cy="-3.2" r="1.7" fill="#2a1a12"/><circle cx="5" cy="-3.2" r="1.7" fill="#2a1a12"/>
+      <circle cx="-3.7" cy="-3.8" r=".6" fill="#fff"/><circle cx="5.5" cy="-3.8" r=".6" fill="#fff"/>
+      <path d="M-1.6 2 Q0 3.4 1.6 2" fill="none" stroke="#2a1a12" stroke-width="1" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="a-owl" viewBox="-14 -18 28 33">
+      <ellipse cx="0" cy="12.5" rx="11" ry="2.6" fill="rgba(42,26,18,.35)"/>
+      <g stroke="#2a1a12" stroke-width="1.4" stroke-linejoin="round">
+        <path d="M-10 -5 L-10 -16 L-4 -10Z M10 -5 L10 -16 L4 -10Z" fill="#b8481f"/>
+        <circle r="11" fill="#d9692c"/>
+        <path d="M-10.6 4 Q0 10.5 10.6 4 Q9.6 11 0 11.6 Q-9.6 11 -10.6 4Z" fill="#7a58a8"/>
+        <circle cx="-4.8" cy="-2.2" r="4.3" fill="#fff6e0"/><circle cx="4.8" cy="-2.2" r="4.3" fill="#fff6e0"/>
+        <path d="M-2.2 1.6 L2.2 1.6 L0 6.4Z" fill="#f2bf34" stroke-width="1"/>
+      </g>
+      <circle cx="-4.6" cy="-2.6" r="2" fill="#2a1a12"/><circle cx="5" cy="-2.6" r="2" fill="#2a1a12"/>
+      <circle cx="-4" cy="-3.2" r=".7" fill="#fff"/><circle cx="5.6" cy="-3.2" r=".7" fill="#fff"/>
+    </symbol>
+    <symbol id="a-otter" viewBox="-14 -16 28 31">
+      <ellipse cx="0" cy="12.5" rx="11" ry="2.6" fill="rgba(42,26,18,.35)"/>
+      <g stroke="#2a1a12" stroke-width="1.4" stroke-linejoin="round">
+        <circle cx="-8.4" cy="-7.4" r="2.8" fill="#8a5a38"/><circle cx="8.4" cy="-7.4" r="2.8" fill="#8a5a38"/>
+        <circle r="11" fill="#8a5a38"/>
+        <ellipse cx="0" cy="2.4" rx="6.2" ry="4.2" fill="#f1dcc0" stroke-width="1"/>
+        <path d="M-10.6 4.6 Q0 10.8 10.6 4.6 Q9.6 11 0 11.6 Q-9.6 11 -10.6 4.6Z" fill="#2f7fb5"/>
+        <circle cx="-4.6" cy="-3.4" r="3" fill="#fff"/><circle cx="4.6" cy="-3.4" r="3" fill="#fff"/>
+      </g>
+      <circle cx="-4.2" cy="-4" r="1.5" fill="#2a1a12"/><circle cx="5" cy="-4" r="1.5" fill="#2a1a12"/>
+      <circle cx="-3.8" cy="-4.5" r=".5" fill="#fff"/><circle cx="5.4" cy="-4.5" r=".5" fill="#fff"/>
+      <ellipse cx="0" cy="0.8" rx="2" ry="1.3" fill="#2a1a12"/>
+      <path d="M-2.5 2.4 L-8 1.6 M-2.5 3.4 L-8 4.2 M2.5 2.4 L8 1.6 M2.5 3.4 L8 4.2" stroke="#2a1a12" stroke-width=".6"/>
+    </symbol>
+    <symbol id="a-fox" viewBox="-14 -19 28 34">
+      <ellipse cx="0" cy="12.5" rx="11" ry="2.6" fill="rgba(42,26,18,.35)"/>
+      <g stroke="#2a1a12" stroke-width="1.4" stroke-linejoin="round">
+        <path d="M-10.4 -4 L-9.4 -17.5 L-2.6 -9.6Z M10.4 -4 L9.4 -17.5 L2.6 -9.6Z" fill="#e07a3a"/>
+        <circle r="11" fill="#e07a3a"/>
+        <path d="M-9.6 -0.5 Q-4.5 -2 0 3.5 Q4.5 -2 9.6 -0.5 Q7 8.5 0 9 Q-7 8.5 -9.6 -0.5Z" fill="#fbeedd" stroke-width="1"/>
+        <path d="M-10.6 4 Q0 10.5 10.6 4 Q9.6 11 0 11.6 Q-9.6 11 -10.6 4Z" fill="#c0392b"/>
+        <circle cx="-4.6" cy="-3.6" r="3" fill="#fff"/><circle cx="4.6" cy="-3.6" r="3" fill="#fff"/>
+      </g>
+      <path d="M-8.6 -8 L-8.4 -14.5 L-4.6 -10Z M8.6 -8 L8.4 -14.5 L4.6 -10Z" fill="#fbeedd"/>
+      <circle cx="-4.2" cy="-4.1" r="1.6" fill="#2a1a12"/><circle cx="5" cy="-4.1" r="1.6" fill="#2a1a12"/>
+      <circle cx="-3.7" cy="-4.7" r=".55" fill="#fff"/><circle cx="5.5" cy="-4.7" r=".55" fill="#fff"/>
+      <ellipse cx="0" cy="2.2" rx="1.9" ry="1.3" fill="#2a1a12"/>
+    </symbol>
+    <symbol id="a-hedgehog" viewBox="-14 -18 28 33">
+      <ellipse cx="0" cy="12.5" rx="11" ry="2.6" fill="rgba(42,26,18,.35)"/>
+      <g stroke="#2a1a12" stroke-width="1.4" stroke-linejoin="round">
+        <path d="M-11.5 4 L-13.8 -1.5 L-11 -4.5 L-13 -9.5 L-8.5 -10 L-8.5 -14.8 L-3.6 -12.2 L0 -16.6 L3.6 -12.2 L8.5 -14.8 L8.5 -10 L13 -9.5 L11 -4.5 L13.8 -1.5 L11.5 4Z" fill="#4a3524"/>
+        <ellipse cx="0" cy="0.5" rx="9.2" ry="9.6" fill="#e9cfa4"/>
+        <path d="M-10.6 4 Q0 10.5 10.6 4 Q9.6 11 0 11.6 Q-9.6 11 -10.6 4Z" fill="#8d6e3f"/>
+        <circle cx="-4.2" cy="-2.6" r="2.8" fill="#fff"/><circle cx="4.2" cy="-2.6" r="2.8" fill="#fff"/>
+      </g>
+      <circle cx="-3.8" cy="-3" r="1.5" fill="#2a1a12"/><circle cx="4.6" cy="-3" r="1.5" fill="#2a1a12"/>
+      <circle cx="-3.4" cy="-3.5" r=".5" fill="#fff"/><circle cx="5" cy="-3.5" r=".5" fill="#fff"/>
+      <circle cx="0" cy="2.6" r="1.7" fill="#2a1a12"/><ellipse cx="-6.4" cy="1.2" rx="1.6" ry="1" fill="#f2a9a0"/><ellipse cx="6.4" cy="1.2" rx="1.6" ry="1" fill="#f2a9a0"/>
+    </symbol>
+    <symbol id="a-frog" viewBox="-14 -17 28 32">
+      <ellipse cx="0" cy="12.5" rx="11" ry="2.6" fill="rgba(42,26,18,.35)"/>
+      <g stroke="#2a1a12" stroke-width="1.4" stroke-linejoin="round">
+        <circle cx="-6" cy="-8.5" r="5" fill="#8fd16a"/><circle cx="6" cy="-8.5" r="5" fill="#8fd16a"/>
+        <ellipse cx="0" cy="0" rx="12" ry="10" fill="#8fd16a"/>
+        <path d="M-10.6 4 Q0 10.5 10.6 4 Q9.6 11 0 11.6 Q-9.6 11 -10.6 4Z" fill="#3f9a4a"/>
+        <circle cx="-6" cy="-8.8" r="3.3" fill="#fff"/><circle cx="6" cy="-8.8" r="3.3" fill="#fff"/>
+        <path d="M-6 1 Q0 5 6 1" fill="none" stroke-linecap="round"/>
+      </g>
+      <circle cx="-5.6" cy="-9.2" r="1.7" fill="#2a1a12"/><circle cx="6.4" cy="-9.2" r="1.7" fill="#2a1a12"/>
+      <circle cx="-5.1" cy="-9.8" r=".6" fill="#fff"/><circle cx="6.9" cy="-9.8" r=".6" fill="#fff"/>
+      <ellipse cx="-7.4" cy="-1" rx="1.8" ry="1.1" fill="#f2a9a0"/><ellipse cx="7.4" cy="-1" rx="1.8" ry="1.1" fill="#f2a9a0"/>
+    </symbol>
+    <symbol id="a-mole" viewBox="-14 -16 28 31">
+      <ellipse cx="0" cy="12.5" rx="11" ry="2.6" fill="rgba(42,26,18,.35)"/>
+      <g stroke="#2a1a12" stroke-width="1.4" stroke-linejoin="round">
+        <circle r="11" fill="#4e3f4a"/>
+        <path d="M-5 -10.4 Q0 -13 5 -10.4 L4.4 -7.4 L-4.4 -7.4Z" fill="#c9a24a" stroke-width="1"/><circle cx="0" cy="-9.4" r="1.8" fill="#ffd84a" stroke-width=".8"/>
+        <path d="M-10.6 4 Q0 10.5 10.6 4 Q9.6 11 0 11.6 Q-9.6 11 -10.6 4Z" fill="#c2507f"/>
+        <ellipse cx="0" cy="1.8" rx="4" ry="3" fill="#f0a3b8"/>
+        <path d="M-9 6.5 l1 -2.5 M-7.4 7 l.6 -2.8 M9 6.5 l-1 -2.5 M7.4 7 l-.6 -2.8" stroke="#f0a3b8" stroke-width="1.3" stroke-linecap="round"/>
+      </g>
+      <path d="M-6 -3 Q-4.4 -1.6 -2.8 -3 M2.8 -3 Q4.4 -1.6 6 -3" fill="none" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/>
+      <ellipse cx="-1" cy="1" rx="1" ry=".6" fill="#fff" opacity=".7"/>
+    </symbol>
+    <!-- faction pieces: wooden discs with animal faces -->
+    <symbol id="m-badger" viewBox="-14 -17 28 32">
+      <ellipse cx="0" cy="12" rx="11" ry="3" fill="rgba(0,0,0,.35)"/>
+      <circle cx="-8" cy="-9" r="4" fill="#2b2f35" stroke="#fff" stroke-width="1.2"/><circle cx="8" cy="-9" r="4" fill="#2b2f35" stroke="#fff" stroke-width="1.2"/>
+      <circle r="11.5" fill="#2b2f35" stroke="#fff" stroke-width="1.6"/>
+      <path d="M-3 -11 Q0 -12 3 -11 L2 5 Q0 7 -2 5Z" fill="#f2f0ea"/>
+      <circle cx="-5" cy="-1" r="1.6" fill="#fff"/><circle cx="5" cy="-1" r="1.6" fill="#fff"/>
+      <ellipse cx="0" cy="6.5" rx="2.4" ry="1.6" fill="#111"/>
+    </symbol>
+    <symbol id="m-rabbit" viewBox="-14 -21 28 36">
+      <ellipse cx="0" cy="12" rx="11" ry="3" fill="rgba(0,0,0,.35)"/>
+      <ellipse cx="-5" cy="-12" rx="3.6" ry="8.5" fill="#d9772b" stroke="#fff" stroke-width="1.2" transform="rotate(-12 -5 -12)"/>
+      <ellipse cx="5" cy="-12" rx="3.6" ry="8.5" fill="#d9772b" stroke="#fff" stroke-width="1.2" transform="rotate(12 5 -12)"/>
+      <ellipse cx="-5" cy="-12" rx="1.5" ry="6" fill="#f7c9a6" transform="rotate(-12 -5 -12)"/><ellipse cx="5" cy="-12" rx="1.5" ry="6" fill="#f7c9a6" transform="rotate(12 5 -12)"/>
+      <circle r="11" fill="#d9772b" stroke="#fff" stroke-width="1.6"/>
+      <circle cx="-4.5" cy="-1.5" r="1.7" fill="#2a1a0c"/><circle cx="4.5" cy="-1.5" r="1.7" fill="#2a1a0c"/>
+      <ellipse cx="0" cy="4.5" rx="4.5" ry="3.5" fill="#fbe7d4"/><path d="M-1.5 3 L1.5 3 L0 5Z" fill="#c2456b"/>
+    </symbol>
+    <symbol id="m-owl" viewBox="-14 -18 28 33">
+      <ellipse cx="0" cy="12" rx="11" ry="3" fill="rgba(0,0,0,.35)"/>
+      <path d="M-11 -6 L-9 -16 L-3 -9Z M11 -6 L9 -16 L3 -9Z" fill="#5c3f86" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/>
+      <circle r="11.5" fill="#7a58a8" stroke="#fff" stroke-width="1.6"/>
+      <circle cx="-4.5" cy="-2" r="4.2" fill="#fff"/><circle cx="4.5" cy="-2" r="4.2" fill="#fff"/>
+      <circle cx="-4.5" cy="-2" r="2" fill="#1a1022"/><circle cx="4.5" cy="-2" r="2" fill="#1a1022"/>
+      <path d="M-2 3 L2 3 L0 7Z" fill="#f0b030"/>
+    </symbol>
+    <symbol id="m-otter" viewBox="-14 -16 28 31">
+      <ellipse cx="0" cy="12" rx="11" ry="3" fill="rgba(0,0,0,.35)"/>
+      <circle cx="-8.5" cy="-7.5" r="3" fill="#2b7bb0" stroke="#fff" stroke-width="1.2"/><circle cx="8.5" cy="-7.5" r="3" fill="#2b7bb0" stroke="#fff" stroke-width="1.2"/>
+      <circle r="11.5" fill="#2b7bb0" stroke="#fff" stroke-width="1.6"/>
+      <ellipse cx="0" cy="4" rx="7" ry="5" fill="#d9ecf7"/>
+      <circle cx="-4.5" cy="-3" r="1.7" fill="#0c1a24"/><circle cx="4.5" cy="-3" r="1.7" fill="#0c1a24"/>
+      <ellipse cx="0" cy="2" rx="2.4" ry="1.6" fill="#0c1a24"/>
+      <path d="M-3 4.5 L-9 3.5 M-3 5.5 L-9 6.5 M3 4.5 L9 3.5 M3 5.5 L9 6.5" stroke="#0c1a24" stroke-width=".7"/>
+    </symbol>
+    <symbol id="m-fox" viewBox="-14 -19 28 34">
+      <ellipse cx="0" cy="12" rx="11" ry="3" fill="rgba(0,0,0,.35)"/>
+      <path d="M-11 -4 L-9.5 -17.5 L-2.5 -10Z M11 -4 L9.5 -17.5 L2.5 -10Z" fill="#c0392b" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/>
+      <circle r="11.5" fill="#c0392b" stroke="#fff" stroke-width="1.6"/>
+      <path d="M-9 1 Q-4 -1 0 4 Q4 -1 9 1 Q6 9 0 9.5 Q-6 9 -9 1Z" fill="#fbeedd"/>
+      <circle cx="-4.5" cy="-3" r="1.7" fill="#2a0c08"/><circle cx="4.5" cy="-3" r="1.7" fill="#2a0c08"/>
+      <ellipse cx="0" cy="4" rx="2" ry="1.4" fill="#2a0c08"/>
+    </symbol>
+    <symbol id="m-hedgehog" viewBox="-14 -18 28 33">
+      <ellipse cx="0" cy="12" rx="11" ry="3" fill="rgba(0,0,0,.35)"/>
+      <path d="M-11.5 4 L-13.8 -1.5 L-11 -4.5 L-13 -9.5 L-8.5 -10 L-8.5 -14.8 L-3.6 -12.2 L0 -16.6 L3.6 -12.2 L8.5 -14.8 L8.5 -10 L13 -9.5 L11 -4.5 L13.8 -1.5 L11.5 4Z" fill="#5a4128" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/>
+      <circle r="10.5" fill="#8d6e3f" stroke="#fff" stroke-width="1.6"/>
+      <ellipse cx="0" cy="2.5" rx="6" ry="5.5" fill="#f1dfbf"/>
+      <circle cx="-4.2" cy="-2.6" r="1.6" fill="#24170c"/><circle cx="4.2" cy="-2.6" r="1.6" fill="#24170c"/>
+      <circle cx="0" cy="3" r="1.8" fill="#24170c"/>
+    </symbol>
+    <symbol id="m-frog" viewBox="-14 -17 28 32">
+      <ellipse cx="0" cy="12" rx="11" ry="3" fill="rgba(0,0,0,.35)"/>
+      <circle cx="-6" cy="-8" r="5" fill="#3f9a4a" stroke="#fff" stroke-width="1.2"/><circle cx="6" cy="-8" r="5" fill="#3f9a4a" stroke="#fff" stroke-width="1.2"/>
+      <circle r="11.5" fill="#3f9a4a" stroke="#fff" stroke-width="1.6"/>
+      <circle cx="-6" cy="-8" r="3" fill="#fff"/><circle cx="6" cy="-8" r="3" fill="#fff"/>
+      <circle cx="-6" cy="-8" r="1.5" fill="#0d2410"/><circle cx="6" cy="-8" r="1.5" fill="#0d2410"/>
+      <path d="M-6.5 2 Q0 7 6.5 2" fill="none" stroke="#0d2410" stroke-width="1.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="m-mole" viewBox="-14 -16 28 31">
+      <ellipse cx="0" cy="12" rx="11" ry="3" fill="rgba(0,0,0,.35)"/>
+      <circle r="11.5" fill="#c2507f" stroke="#fff" stroke-width="1.6"/>
+      <path d="M-5 -10.6 Q0 -13 5 -10.6 L4.4 -7.6 L-4.4 -7.6Z" fill="#e9c35a" stroke="#fff" stroke-width=".8"/>
+      <path d="M-6 -2.5 Q-4.4 -1 -2.8 -2.5 M2.8 -2.5 Q4.4 -1 6 -2.5" fill="none" stroke="#2a0c1a" stroke-width="1.4" stroke-linecap="round"/>
+      <ellipse cx="0" cy="3.5" rx="4.2" ry="3.2" fill="#ffc6d6"/>
+    </symbol>
+    <!-- buildings -->
+    <symbol id="b-badger" viewBox="-14 -14 28 28">
+      <rect x="-13" y="-13" width="26" height="26" rx="6" fill="#e9e2cf" stroke="#2b2f35" stroke-width="2.5"/>
+      <path d="M-11 9 Q0 -13 11 9Z" fill="#8a6a43"/><path d="M-4 9 L-4 3 Q0 -3 4 3 L4 9Z" fill="#1d1810"/>
+    </symbol>
+    <symbol id="b-owl" viewBox="-14 -14 28 28">
+      <rect x="-13" y="-13" width="26" height="26" rx="6" fill="#e9e2cf" stroke="#7a58a8" stroke-width="2.5"/>
+      <ellipse cx="-2" cy="0" rx="3.5" ry="4.5" fill="#efe6ff" stroke="#7a58a8"/><ellipse cx="3" cy="1" rx="3.2" ry="4.2" fill="#efe6ff" stroke="#7a58a8"/>
+      <path d="M-11 2 Q0 13 11 2 Q0 7 -11 2Z" fill="#7b5a34"/><path d="M-10 3 L10 4 M-9 6 L8 3" stroke="#4d3820" stroke-width="1"/>
+    </symbol>
+    <symbol id="b-otter" viewBox="-14 -14 28 28">
+      <rect x="-13" y="-13" width="26" height="26" rx="6" fill="#e9e2cf" stroke="#2b7bb0" stroke-width="2.5"/>
+      <path d="M-8 -1 L0 -8 L8 -1Z" fill="#2b7bb0"/><rect x="-6" y="-1" width="12" height="9" fill="#a5794a"/><rect x="-2" y="2" width="4" height="6" fill="#3a2716"/>
+      <path d="M7 -1 L7 -11 L12 -9 L7 -7" fill="#f0b030" stroke="#5a4320" stroke-width=".8"/>
+    </symbol>
+    <symbol id="b-hedgehog" viewBox="-14 -14 28 28">
+      <rect x="-13" y="-13" width="26" height="26" rx="6" fill="#e9e2cf" stroke="#8d6e3f" stroke-width="2.5"/>
+      <ellipse cx="0" cy="3" rx="10" ry="7" fill="#8a6440"/><ellipse cx="0" cy="4" rx="5" ry="4" fill="#1d1810"/>
+      <path d="M-8 -4 Q-4 -10 2 -6 Q-2 -3 -8 -4Z" fill="#c4582a"/><path d="M2 -5 Q7 -9 9 -3 Q5 -2 2 -5Z" fill="#e8963a"/>
+    </symbol>
+    <symbol id="b-frog" viewBox="-14 -14 28 28">
+      <rect x="-13" y="-13" width="26" height="26" rx="6" fill="#cfe7ec" stroke="#3f9a4a" stroke-width="2.5"/>
+      <path d="M0 1 L9 -4 A10 10 0 1 1 3 -9Z" fill="#5aa84a" stroke="#2f6b2a" stroke-width="1"/>
+      <circle cx="-2" cy="-1" r="3" fill="#f2a9c4" stroke="#b5477a" stroke-width=".8"/><circle cx="-2" cy="-1" r="1" fill="#f0c43a"/>
+    </symbol>
+    <symbol id="b-mole" viewBox="-14 -14 28 28">
+      <rect x="-13" y="-13" width="26" height="26" rx="6" fill="#e9e2cf" stroke="#c2507f" stroke-width="2.5"/>
+      <path d="M-11 9 Q-6 -5 0 -5 Q6 -5 11 9Z" fill="#7a5a3a"/><ellipse cx="0" cy="5" rx="4.5" ry="3.2" fill="#1d1810"/>
+      <circle cx="-7" cy="7" r="1.6" fill="#9a948a"/><circle cx="7.5" cy="6" r="1.3" fill="#9a948a"/><circle cx="-4" cy="-2" r="1" fill="#5a4128"/>
+    </symbol>
+    <!-- terrain gems -->
+    <symbol id="t-meadow" viewBox="-12 -12 24 24"><circle r="11" fill="#e8c84a" stroke="#7a5d10" stroke-width="1.5"/><g fill="#fff8d0"><circle cy="-5" r="3"/><circle cx="5" r="3"/><circle cy="5" r="3"/><circle cx="-5" r="3"/></g><circle r="2.5" fill="#c77a10"/></symbol>
+    <symbol id="t-marsh" viewBox="-12 -12 24 24"><circle r="11" fill="#5fa79a" stroke="#1f5a50" stroke-width="1.5"/><path d="M0 -7 Q6 1 0 7 Q-6 1 0 -7Z" fill="#e3f6f1"/></symbol>
+    <symbol id="t-grove" viewBox="-12 -12 24 24"><circle r="11" fill="#5d9a48" stroke="#2a4f1f" stroke-width="1.5"/><path d="M0 -8 L6 2 L2 2 L2 7 L-2 7 L-2 2 L-6 2Z" fill="#e6f5dc"/></symbol>
+    <symbol id="t-moon" viewBox="-12 -12 24 24"><circle r="11" fill="#5a56a8" stroke="#2d2a66" stroke-width="1.5"/><path d="M3 -7 A7.5 7.5 0 1 0 3 7 A6 6 0 1 1 3 -7Z" fill="#fff6c8"/></symbol>
+    <!-- card art -->
+    <symbol id="c-ambush" viewBox="-30 -30 60 60"><path d="M-20 -20 L14 14 M20 -20 L-14 14" stroke="#5a4630" stroke-width="5" stroke-linecap="round"/><path d="M-20 -20 L-12 -18 L-18 -12Z M20 -20 L12 -18 L18 -12Z" fill="#c9c2b0"/><circle cx="16" cy="16" r="5" fill="#8a2d22"/><circle cx="-16" cy="16" r="5" fill="#8a2d22"/><path d="M-26 22 Q-10 12 0 22 Q10 12 26 22" stroke="#3c6b33" stroke-width="4" fill="none"/></symbol>
+    <symbol id="c-rally" viewBox="-30 -30 60 60"><path d="M-22 4 L10 -14 L14 18 Z" fill="#c9952f" stroke="#6b4a10" stroke-width="2.5" stroke-linejoin="round"/><ellipse cx="12" cy="2" rx="5" ry="16" fill="#e7b84a" stroke="#6b4a10" stroke-width="2.5"/><path d="M-22 4 L-26 8 L-20 10Z" fill="#6b4a10"/><path d="M20 -16 L26 -22 M22 -4 L29 -4 M20 10 L26 16" stroke="#6b4a10" stroke-width="2.5" stroke-linecap="round"/></symbol>
+    <symbol id="c-forage" viewBox="-30 -30 60 60"><path d="M-22 -2 L22 -2 L16 22 L-16 22Z" fill="#b5834a" stroke="#5e3f1a" stroke-width="2.5" stroke-linejoin="round"/><path d="M-19 6 L19 6 M-17 14 L17 14" stroke="#5e3f1a" stroke-width="1.5"/><circle cx="-9" cy="-8" r="6" fill="#a8232f"/><circle cx="3" cy="-11" r="6" fill="#5b2a7a"/><circle cx="13" cy="-6" r="5.5" fill="#a8232f"/><path d="M-4 -20 Q2 -26 8 -20" stroke="#3c6b33" stroke-width="3" fill="none"/></symbol>
+    <symbol id="c-hasten" viewBox="-30 -30 60 60"><path d="M-18 22 Q-14 -14 22 -24 Q14 -6 -2 4 Q8 2 12 -2 Q4 14 -18 22Z" fill="#e9f0f5" stroke="#3d5d73" stroke-width="2.5" stroke-linejoin="round"/><path d="M-18 22 L10 -14" stroke="#3d5d73" stroke-width="2"/><path d="M-26 -6 L-12 -6 M-28 4 L-16 4 M-24 14 L-14 14" stroke="#3d5d73" stroke-width="2.5" stroke-linecap="round"/></symbol>
+    <symbol id="c-provision" viewBox="-30 -30 60 60"><rect x="-20" y="-16" width="40" height="32" rx="4" fill="#efe1bb" stroke="#6b5530" stroke-width="2.5"/><path d="M-20 -16 Q0 -4 20 -16" fill="none" stroke="#6b5530" stroke-width="2.5"/><rect x="-14" y="-24" width="12" height="16" rx="2" fill="#e8d3a0" stroke="#6b5530" stroke-width="2" transform="rotate(-14 -8 -16)"/><rect x="2" y="-25" width="12" height="16" rx="2" fill="#e8d3a0" stroke="#6b5530" stroke-width="2" transform="rotate(10 8 -17)"/><circle cy="4" r="5" fill="#a8232f"/></symbol>
+    <symbol id="c-moon" viewBox="-30 -30 60 60"><path d="M8 -22 A22 22 0 1 0 8 22 A17 17 0 1 1 8 -22Z" fill="#fff1a8" stroke="#3b3480" stroke-width="3"/><g fill="#fff8d8"><path d="M18 -14 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2Z"/><circle cx="22" cy="10" r="2"/><circle cx="12" cy="20" r="1.5"/></g></symbol>
+    <!-- phase icons -->
+    <symbol id="p-dawn" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="#f6c58f"/><path d="M6 21 A10 10 0 0 1 26 21Z" fill="#f08a3c"/><path d="M16 5v3M7 9l2 2M25 9l-2 2M3 16h3M26 16h3" stroke="#c4581c" stroke-width="2" stroke-linecap="round"/><path d="M3 21h26" stroke="#7a3d14" stroke-width="2.4" stroke-linecap="round"/><path d="M8 25h16" stroke="#7a3d14" stroke-width="1.6" stroke-linecap="round" opacity=".6"/></symbol>
+    <symbol id="p-day" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="#fbe39a"/><circle cx="16" cy="16" r="6.5" fill="#f2b417" stroke="#b07a06" stroke-width="1.5"/><path d="M16 3.5v4M16 24.5v4M3.5 16h4M24.5 16h4M7.2 7.2l2.8 2.8M22 22l2.8 2.8M24.8 7.2L22 10M10 22l-2.8 2.8" stroke="#b07a06" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="p-dusk" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="#3f3f78"/><path d="M19 7 A9.5 9.5 0 1 0 19 25 A7.5 7.5 0 1 1 19 7Z" fill="#fff1b0"/><circle cx="23" cy="10" r="1.2" fill="#fff"/><circle cx="25" cy="18" r="1" fill="#fff"/></symbol>
+    <!-- action icons -->
+    <symbol id="i-move" viewBox="0 0 24 24"><path d="M4 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-fight" viewBox="0 0 24 24"><path d="M4 4l11 11M20 4L9 15M6 18l-2 2M18 18l2 2M13 13l-2 2 3 3 2-2M11 13l2 2-3 3-2-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-build" viewBox="0 0 24 24"><path d="M3 20h18M5 20v-8l7-6 7 6v8M10 20v-5h4v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-add" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v10M7 12h10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 9h6M9 13h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-end" viewBox="0 0 24 24"><path d="M6 12l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" fill="#e9b52a" stroke="#8a6410" stroke-width="1.2"/></symbol>
+  </defs>
+</svg>
