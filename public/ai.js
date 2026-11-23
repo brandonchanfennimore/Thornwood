@@ -29,8 +29,10 @@ function scoreAction(s, f, a) {
       return (nb < 6 && p.stone < E.SETT_COST[nb] && p.hand.length >= 3 && KEEP[card.type] <= 2) ? 3 : (p.hand.length >= 5 && KEEP[card.type] <= 1 ? 1 : -1);
     }
     case 'trade': return (p.coins < 3 && KEEP[card.type] <= 2) ? 3 : (p.hand.length >= 5 && KEEP[card.type] <= 1 ? 1 : -1);
-    case 'build': return 11 + (f === 'badger' ? E.SETT_VP[E.buildingsOnMap(s, f)] : 2) - Math.min(3, enemyNear(s, f, a.region) * 0.3);
+    case 'build': return 11 + (f === 'badger' ? E.SETT_VP[E.buildingsOnMap(s, f)] : 2) + (f === 'mole' && R[a.region].terrain === E.season(s) ? 1 : 0) - Math.min(3, enemyNear(s, f, a.region) * 0.3);
     case 'muster': case 'hatch': return 8;
+    case 'raid': return 7 + Math.min(2, E.P(s, a.target).hand.length * 0.4);
+    case 'raise': return 4 + (enemyNear(s, f, a.region) > 2 ? 2 : 0);
     case 'hire': return 4 + (enemyNear(s, f, a.region) > 2 ? 2 : 0) - (p.coins < 4 ? 2 : 0);
     case 'burst': return 3 + (R[a.region].terrain === E.season(s) ? 2 : 0) + (enemyNear(s, f, a.region) > 2 ? 1.5 : 0);
     case 'fight': {
@@ -39,6 +41,7 @@ function scoreAction(s, f, a) {
       const ad = dice(s, f, a.region, mine), dd = theirs ? dice(s, a.target, a.region, theirs) + (tb ? 1 : 0) : 0;
       let v = 2 + (ad - dd) * 1.5 + tb * 3 + (theirs ? 0 : 3);
       if (f === 'owl') v += Math.min(theirs, 2) * 1.5;
+      if (a.target === 'hedgehog' && theirs) v -= 1.5;
       if (ad < 2 && f !== 'owl') v -= 3;
       // pick on the leader
       const lead = Math.max(...s.players.map(q => q.renown));
@@ -57,6 +60,8 @@ function scoreAction(s, f, a) {
       if (f === 'otter' && E.RIVERSIDE[to] && !E.buildingsOf(s, to, f)) v += 2;
       if (f === 'otter' && ruler && ruler !== f) v += 0.5;
       if (f === 'rabbit' && R[to].terrain === E.season(s)) v += 2;
+      if (f === 'fox' && !E.critters(s, to, f) && s.regions[to].b.some(b => b !== f)) v += 2.5;
+      if (f === 'frog' && E.wet(to)) v += 1 + (E.ADJ[to].some(x => E.rules(s, f, x)) ? 1 : 0);
       if (f === 'rabbit' && R[to].terrain === ['meadow', 'marsh', 'grove'][s.round % 3]) v += 1;
       if (enemies > n - keep + 1) v -= 3;
       if (ruler === f && E.critters(s, to, f) > 3) v -= 2;

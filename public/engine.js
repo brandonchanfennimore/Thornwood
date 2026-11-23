@@ -33,6 +33,10 @@
     rabbit: { name: 'Rabbit Warrens', short: 'Rabbits', color: '#d9822b', critters: 28, building: null,   maxB: 0, start: 3 },
     owl:    { name: 'Owl Parliament', short: 'Owls',    color: '#7b5ea7', critters: 10, building: 'nest', maxB: 4, start: 8 },
     otter:  { name: 'Otter Company',  short: 'Otters',  color: '#2f7fb5', critters: 14, building: 'post', maxB: 5, start: 12 },
+    fox:      { name: 'Fox Raiders',      short: 'Foxes',     color: '#c0392b', critters: 16, building: null,     maxB: 0, start: 2 },
+    hedgehog: { name: 'Hedgehog Hollows', short: 'Hedgehogs', color: '#8d6e3f', critters: 18, building: 'hollow', maxB: 5, start: 4 },
+    frog:     { name: 'Frog Chorus',      short: 'Frogs',     color: '#3f9a4a', critters: 18, building: 'lily pad', maxB: 4, start: 10 },
+    mole:     { name: 'Mole Delvers',     short: 'Moles',     color: '#c2507f', critters: 16, building: 'tunnel', maxB: 5, start: 9 },
   };
   const FACTION_KEYS = Object.keys(FACTIONS);
 
@@ -41,6 +45,7 @@
   const SETT_VP = [0, 1, 1, 2, 2, 3];     // renown for placing it
   const OWL_NEST_VP = [0, 0, 1, 2, 3];
   const OTTER_COST = { move: 1, fight: 2, hire: 2, post: 3 };
+  const handLimit = f => f === 'hedgehog' ? 7 : HAND_LIMIT;   // hedgehogs hoard
 
   const CARD_TYPES = {
     ambush:    { name: 'Ambush',    text: 'Triggers by itself when you are attacked in a matching region: deal 2 hits first. The attacker can cancel it with a matching Ambush.' },
@@ -83,7 +88,7 @@
   function ruler(s, r) {
     let best = null, bv = 0, tie = false;
     for (const p of s.players) {
-      const v = pieces(s, r, p.faction);
+      const v = p.faction === 'mole' ? critters(s, r, 'mole') : pieces(s, r, p.faction);
       if (v > bv) { best = p.faction; bv = v; tie = false; } else if (v === bv && v > 0) tie = true;
     }
     return tie ? null : best;
@@ -126,6 +131,18 @@
     opts.sort((a, b) => CARD_KEEP[a.type] - CARD_KEEP[b.type]);
     return opts[0] || null;
   }
+  const wet = r => REGIONS[r].terrain === 'marsh' || RIVERSIDE[r];
+  // frogs: biggest group of connected clearings they rule
+  function chorus(s, f) {
+    const seen = new Set(); let best = 0;
+    for (let i = 0; i < REGIONS.length; i++) {
+      if (seen.has(i) || !rules(s, f, i)) continue;
+      let n = 0; const st = [i]; seen.add(i);
+      while (st.length) { const r = st.pop(); n++; for (const a of ADJ[r]) if (!seen.has(a) && rules(s, f, a)) { seen.add(a); st.push(a); } }
+      best = Math.max(best, n);
+    }
+    return best;
+  }
   function within2(r) {
     const set = new Set(ADJ[r]);
     for (const a of ADJ[r]) for (const b of ADJ[a]) set.add(b);
@@ -147,6 +164,8 @@
       if (f === 'rabbit') { place(s, st, f, 4); place(s, 7, f, 2); }
       if (f === 'owl') { s.regions[st].b.push('owl'); place(s, st, f, 3); }
       if (f === 'otter') { s.regions[st].b.push('otter'); place(s, st, f, 3); p.coins = 2; }
+      if (f === 'fox') place(s, st, f, 4);
+      if (f === 'hedgehog' || f === 'frog' || f === 'mole') { s.regions[st].b.push(f); place(s, st, f, 3); }
       draw(s, p, 4);
     }
     log(s, 'The war for Thornwood begins. First to 30 renown wins.');
@@ -172,6 +191,22 @@
     } else if (f === 'otter') {
       const inc = 1 + buildingsOnMap(s, f); p.coins = Math.min(12, p.coins + inc);
       log(s, `Otters collect ${inc} coins.`);
+    } else if (f === 'fox') {
+      let r = FACTIONS.fox.start, most = 0;
+      for (let i = 0; i < REGIONS.length; i++) if (critters(s, i, f) > most) { most = critters(s, i, f); r = i; }
+      const n = place(s, r, f, 2); s.actionsLeft = 3;
+      log(s, `Foxes prowl: +${n} in ${REGIONS[r].name}.`);
+    } else if (f === 'hedgehog') {
+      const n = draw(s, p, Math.min(2, buildingsOnMap(s, f))); s.actionsLeft = 3;
+      log(s, `Hedgehogs forage ${n} card${n === 1 ? '' : 's'}.`);
+    } else if (f === 'frog') {
+      let n = 0; for (let i = 0; i < REGIONS.length; i++) if (buildingsOf(s, i, f) || (REGIONS[i].terrain === 'marsh' && rules(s, f, i))) n += place(s, i, f, 1);
+      s.actionsLeft = 3;
+      log(s, `Frogs spawn: +${n} frog${n === 1 ? '' : 's'}.`);
+    } else if (f === 'mole') {
+      let n = 0; s.regions.forEach((R, i) => { for (const b of R.b) if (b === f) n += place(s, i, f, 1); });
+      s.actionsLeft = 3;
+      log(s, `Moles surface: +${n} mole${n === 1 ? '' : 's'}.`);
     }
   }
 
@@ -191,13 +226,23 @@
       let n = 0;
       s.regions.forEach((R, i) => { const k = R.b.filter(b => b === f).length; if (k) { const rl = ruler(s, i); n += k * (rl && rl !== f ? 2 : 1); } });
       const posts = buildingsOnMap(s, f);
-            gain(s, f, n, 'trade');
+      gain(s, f, n, 'trade');
       if (posts >= 3) d++;
+    } else if (f === 'fox') {
+      const n = s.regions.filter((R, i) => critters(s, i, f) && R.b.some(b => b !== f)).length;
+      gain(s, f, Math.min(2, n), 'lurking by enemy buildings');
+    } else if (f === 'hedgehog') {
+      gain(s, f, Math.min(2, Math.floor(p.hand.length / 2)), 'hoard');
+    } else if (f === 'frog') {
+      gain(s, f, chorus(s, f), 'chorus');
+    } else if (f === 'mole') {
+      const n = s.regions.reduce((k, R, i) => k + (REGIONS[i].terrain === season(s) ? R.b.filter(b => b === f).length : 0), 0);
+      gain(s, f, n + Math.floor(buildingsOnMap(s, f) / 2), 'tunnels');
     }
     if (s.phase === 'over') return;
     const got = draw(s, p, d);
     log(s, `${fname(f)} draw ${got} card${got === 1 ? '' : 's'}.`);
-    if (p.hand.length > HAND_LIMIT) { s.phase = 'discard'; return; }
+    if (p.hand.length > handLimit(f)) { s.phase = 'discard'; return; }
     nextTurn(s);
   }
 
@@ -248,10 +293,14 @@
     if (canPay(s, p, 'move')) {
       for (let r = 0; r < N; r++) {
         const n = critters(s, r, f); if (!n) continue;
-        const dests = f === 'owl' ? within2(r) : ADJ[r];
+        const free = new Set();   // destinations reached without needing rule
+        if (f === 'frog') within2(r).filter(wet).forEach(d => free.add(d));
+        if (f === 'mole' && buildingsOf(s, r, f)) for (let d = 0; d < N; d++) if (d !== r && buildingsOf(s, d, f)) free.add(d);
+        const dests = f === 'owl' ? within2(r) : [...new Set([...ADJ[r], ...free])];
+        const verb = { owl: 'Fly', frog: 'Leap', mole: 'Tunnel' }[f] || 'Move';
         for (const d of dests) {
-          if (f === 'owl' || (f === 'otter' && isRiver(r, d)) || rules(s, f, r) || rules(s, f, d))
-            out.push({ type: 'move', from: r, to: d, max: n, label: `${f === 'owl' ? 'Fly' : 'Move'} ${RN(r)} → ${RN(d)}` });
+          if (f === 'owl' || f === 'fox' || free.has(d) || (f === 'otter' && isRiver(r, d)) || rules(s, f, r) || rules(s, f, d))
+            out.push({ type: 'move', from: r, to: d, max: n, label: `${verb} ${RN(r)} → ${RN(d)}` });
         }
       }
     }
@@ -281,6 +330,23 @@
       for (let r = 0; r < N; r++) if (critters(s, r, f) && costCard(p, REGIONS[r].terrain))
         out.push({ type: 'burst', region: r, label: `Burrow burst in ${RN(r)}: +3 rabbits (pay a ${REGIONS[r].terrain} card)` });
     }
+    if (f === 'fox' && s.actionsLeft > 0) {
+      for (let r = 0; r < N; r++) {
+        if (!critters(s, r, f)) continue;
+        for (const q of s.players) if (q.faction !== f && !s.flags['raid-' + q.faction] && q.hand.length && pieces(s, r, q.faction) > 0)
+          out.push({ type: 'raid', region: r, target: q.faction, label: `Raid the ${fname(q.faction)} in ${RN(r)}: steal a card, +1 renown` });
+      }
+    }
+    if ((f === 'hedgehog' || f === 'frog' || f === 'mole') && s.actionsLeft > 0) {
+      if (f === 'hedgehog' && supply(s, f) > 0)
+        for (let r = 0; r < N; r++) if (buildingsOf(s, r, f)) out.push({ type: 'raise', region: r, label: `Raise 2 hedgehogs at ${RN(r)}` });
+      const B = FACTIONS[f].building;
+      if (nb < FACTIONS[f].maxB) for (let r = 0; r < N; r++) {
+        const ok = f === 'mole' ? critters(s, r, f) > 0 : rules(s, f, r) && (f !== 'frog' || wet(r));
+        if (ok && freeSlots(s, r) > 0 && costCard(p, REGIONS[r].terrain))
+          out.push({ type: 'build', region: r, label: `Build a ${B} in ${RN(r)} (pay a ${REGIONS[r].terrain} card)` });
+      }
+    }
     if (f === 'otter') {
       if (p.coins >= OTTER_COST.hire && supply(s, f) > 0)
         for (let r = 0; r < N; r++) if (buildingsOf(s, r, f)) out.push({ type: 'hire', region: r, label: `Hire 2 otters at ${RN(r)} (2 coins)` });
@@ -300,7 +366,7 @@
     const p = P(s, f), RN = i => REGIONS[i].name;
     s.seq++;
     switch (a.type) {
-      case 'discard': { const c = takeCard(s, p, a.card); log(s, `${fname(f)} discard ${cardName(c)}.`); if (p.hand.length <= HAND_LIMIT) nextTurn(s); break; }
+      case 'discard': { const c = takeCard(s, p, a.card); log(s, `${fname(f)} discard ${cardName(c)}.`); if (p.hand.length <= handLimit(f)) nextTurn(s); break; }
       case 'end': endTurn(s); break;
       case 'card': {
         const c = takeCard(s, p, a.card);
@@ -340,12 +406,23 @@
         if (f === 'badger') { p.stone -= SETT_COST[nb]; s.actionsLeft--; s.regions[a.region].b.push(f); log(s, `Badgers dig a sett in ${RN(a.region)}.`); gain(s, f, SETT_VP[nb], 'new sett'); }
         if (f === 'owl') { const c = costCard(p, t); takeCard(s, p, c.id); s.actionsLeft--; s.regions[a.region].b.push(f); log(s, `Owls build a nest in ${RN(a.region)}.`); }
         if (f === 'otter') { const c = costCard(p, t); takeCard(s, p, c.id); p.coins -= OTTER_COST.post; s.regions[a.region].b.push(f); log(s, `Otters open a trading post in ${RN(a.region)}.`); gain(s, f, 1, 'new post'); }
+        if (f === 'hedgehog' || f === 'frog' || f === 'mole') {
+          const c = costCard(p, t); takeCard(s, p, c.id); s.actionsLeft--; s.regions[a.region].b.push(f);
+          log(s, `${fname(f)} build a ${FACTIONS[f].building} in ${RN(a.region)}.`);
+          gain(s, f, 1, 'new ' + FACTIONS[f].building);
+        }
         break;
       }
       case 'burst': {
         const c = costCard(p, REGIONS[a.region].terrain); takeCard(s, p, c.id); s.actionsLeft--;
         const n = place(s, a.region, f, 3); log(s, `Rabbits burst out in ${RN(a.region)}: +${n}.`); break;
       }
+      case 'raid': {
+        s.actionsLeft--; s.flags['raid-' + a.target] = true;
+        const q = P(s, a.target), [c] = q.hand.splice(Math.floor(Math.random() * q.hand.length), 1);
+        p.hand.push(c); log(s, `Foxes raid the ${fname(a.target)} in ${RN(a.region)} and steal a card.`); gain(s, f, 1, 'raid'); break;
+      }
+      case 'raise': { s.actionsLeft--; const n = place(s, a.region, f, 2); log(s, `Hedgehogs raise ${n} in ${RN(a.region)}.`); break; }
       case 'hire': {
         p.coins -= OTTER_COST.hire; const n = place(s, a.region, f, 2); log(s, `Otters hire ${n} in ${RN(a.region)}.`); break;
       }
@@ -390,6 +467,7 @@
     const defNeed = def === 'badger' ? 3 : 4;
     let ah = res.attRolls.filter(x => x >= 4).length, dh = res.defRolls.filter(x => x >= defNeed).length;
     if (!defCritters) { ah++; res.notes.push('Defenseless: +1 hit.'); }
+    if (def === 'hedgehog' && defCritters) { dh++; res.notes.push('Spines: +1 hit.'); }
     res.attHits = ah; res.defHits = dh;
     const xd = removeHits(s, def, r, ah, att, att === 'owl');
     const xa = removeHits(s, att, r, dh, def, false);
@@ -413,7 +491,7 @@
 
   const api = {
     TERRAINS, REGIONS, EDGES, RIVER, ADJ, RIVERSIDE, FACTIONS, FACTION_KEYS, CARD_TYPES, WIN, MAX_ROUNDS, HAND_LIMIT,
-    SETT_COST, SETT_VP, OTTER_COST, OWL_NEST_VP,
+    SETT_COST, SETT_VP, OTTER_COST, OWL_NEST_VP, handLimit, chorus, wet,
     newGame, listActions, apply, viewFor, ruler, rules, critters, buildingsOf, pieces, supply, buildingsOnMap,
     ruledCount, season, isRiver, within2, cardName, freeSlots, P,
   };

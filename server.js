@@ -9,7 +9,7 @@ const AI = require('./public/ai.js');
 const PORT = process.env.PORT || 3000;
 const PUB = path.join(__dirname, 'public');
 const rooms = new Map();
-const AI_NAMES = { badger: 'Old Brock', rabbit: 'Clover', owl: 'Hootsworth', otter: 'Captain Slick' };
+const AI_NAMES = { badger: 'Old Brock', rabbit: 'Clover', owl: 'Hootsworth', otter: 'Captain Slick', fox: 'Vixen Ash', hedgehog: 'Mother Bristle', frog: 'Croakwell', mole: 'Digby' };
 
 const tok = () => crypto.randomBytes(12).toString('hex');
 function code() {

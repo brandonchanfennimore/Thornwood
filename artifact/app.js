@@ -10,9 +10,8 @@
     get(k) { try { return localStorage.getItem(k); } catch { return null; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch {} },
   };
-  const AI_NAMES = { badger: 'Old Brock', rabbit: 'Clover', owl: 'Hootsworth', otter: 'Captain Slick' };
-  const VB = { badger: '-14 -17 28 32', rabbit: '-14 -21 28 36', owl: '-14 -18 28 33', otter: '-14 -16 28 31' };
-  const PIECE_H = { badger: 32, rabbit: 36, owl: 33, otter: 31 };
+  const AI_NAMES = { badger: 'Old Brock', rabbit: 'Clover', owl: 'Hootsworth', otter: 'Captain Slick', fox: 'Vixen Ash', hedgehog: 'Mother Bristle', frog: 'Croakwell', mole: 'Digby' };
+  const PIECE_H = { badger: 32, rabbit: 36, owl: 33, otter: 31, fox: 34, hedgehog: 33, frog: 32, mole: 31 };
   // visual style: 'simple' (wooden discs, flat map), 'art' (storybook critters, inked autumn map) or '3d' (artistic page with a
   // three.js board); symbols are #m-* (simple) or #a-* (art and 3d)
   let style = ['art', '3d'].includes(ls.get('tw-style')) ? ls.get('tw-style') : 'simple';
@@ -229,17 +228,23 @@
     save(g);
   }
 
+  const BUILD_VERB = { badger: 'Digs a sett', owl: 'Builds a nest', otter: 'Opens a trading post', hedgehog: 'Builds a hollow', frog: 'Floats a lily pad', mole: 'Digs a tunnel' };
+  const BUILD_BTN = { badger: 'Dig a sett', owl: 'Build a nest', otter: 'Open a trading post', hedgehog: 'Build a hollow', frog: 'Float a lily pad', mole: 'Dig a tunnel' };
+  const MOVE_VERB = { owl: 'Fly', frog: 'Move or leap', mole: 'Move or tunnel' };
+  const MOVE_HINT = { owl: ' Owls fly up to 2 clearings.', frog: ' Frogs leap up to 2 clearings into marsh or riverside clearings.', mole: ' Moles can travel between any two of their tunnels.', fox: ' Foxes ignore rule when they move.' };
   // ---------- describing moves ----------
   function describe(st, f, a) {
     const who = `<b>${esc(pname(st, f))}</b>`, n = E.FACTIONS[f].short.toLowerCase();
     const p = st.players.find(p => p.faction === f);
     const card = a.card ? p.hand.find(c => c.id === a.card) : null;
     switch (a.type) {
-      case 'move': { const c = a.count || 1; return `${who} ${f === 'owl' ? 'flies' : 'moves'} ${c} ${c === 1 ? n.replace(/s$/, '') : n} from ${R[a.from].name} to ${R[a.to].name}`; }
+      case 'move': { const c = a.count || 1; return `${who} ${{ owl: 'flies', frog: 'hops' }[f] || 'moves'} ${c} ${c === 1 ? (f === 'fox' ? 'fox' : n.replace(/s$/, '')) : n} from ${R[a.from].name} to ${R[a.to].name}`; }
       case 'fight': return `${who} attacks the ${short(a.target)} in ${R[a.region].name}`;
       case 'muster': return `${who} musters a badger at every sett`;
       case 'hatch': return `${who} hatches an owl at every nest`;
-      case 'build': return `${who} ${{ badger: 'digs a sett', owl: 'builds a nest', otter: 'opens a trading post' }[f]} in ${R[a.region].name}`;
+      case 'build': return `${who} ${BUILD_VERB[f].toLowerCase()} in ${R[a.region].name}`;
+      case 'raid': return `${who} raids the ${short(a.target)} in ${R[a.region].name} and steals a card`;
+      case 'raise': return `${who} raises 2 hedgehogs at ${R[a.region].name}`;
       case 'burst': return `${who} bursts 3 rabbits out in ${R[a.region].name}`;
       case 'hire': return `${who} hires 2 otters at ${R[a.region].name}`;
       case 'card': return `${who} plays ${card ? E.cardName(card) : 'a card'}${a.region !== undefined ? ' in ' + R[a.region].name : ''}`;
@@ -267,6 +272,7 @@
   const FIGHT = ['fight', 'Attack', '1 action', 'Start a battle in a clearing where you have critters.'];
   const CARDS = ['card', 'Play cards', 'free', 'Rally, Forage, Hasten, Provision and Moonlight cards can be played at any time during your Day.'];
   const DUSK_END = [['', 'Discard', '', 'If you hold more than 5 cards, discard down to 5.']];
+  const DRAW1 = ['', 'Draw', '', 'Draw 1 card.'];
   const PHASES = {
     badger: {
       tag: 'Builders who dig in. Turn stone into setts and hold them stubbornly.',
@@ -300,6 +306,38 @@
       day: [['move', 'Move', '1 coin', 'Move to an adjacent clearing. Along a river you ignore rule.'], ['fight', 'Attack', '2 coins', 'Start a battle in a clearing where you have otters.'], ['hire', 'Hire', '2 coins', 'Add 2 otters at one of your trading posts.'], ['build', 'Open a trading post', '3 coins + matching card', 'In a riverside clearing where you have an otter and a free slot. Gain 1 renown.'], ['trade', 'Sell a card', 'free', 'Discard a card to gain 1 coin.'], CARDS],
       dusk: [['', 'Score trade', '', 'Each trading post scores 1 renown, or 2 if another faction rules its clearing.'], ['', 'Draw', '', 'Draw 1 card, or 2 if you have 3 or more posts.'], ...DUSK_END],
     },
+    fox: {
+      tag: 'Raiders and thieves. Slip past any border, steal cards and lurk by other factions\' buildings.',
+      perk: 'Sly: foxes move without needing to rule either clearing.',
+      dawn: [['', 'Prowl', 'automatic', 'Add 2 foxes to the clearing where you have the most foxes.']],
+      dayNote: 'You have 3 actions.',
+      day: [['move', 'Move', '1 action', 'Move any number of foxes to an adjacent clearing. Foxes ignore rule.'], FIGHT, ['raid', 'Raid', '1 action · once per faction', 'In a clearing where you have a fox and another faction has a piece, steal a random card from them and gain 1 renown.'], CARDS],
+      dusk: [['', 'Score lurking', '', 'Gain 1 renown for every clearing where your foxes sit beside another faction\'s building (up to 2).'], DRAW1, ...DUSK_END],
+    },
+    hedgehog: {
+      tag: 'Prickly hoarders. Stockpile cards, curl up in hollows and make attackers pay.',
+      perk: 'Spines: when hedgehogs defend, they deal 1 extra hit.',
+      dawn: [['', 'Forage', 'automatic', 'Draw 1 card for every hollow on the map (up to 2).']],
+      dayNote: 'You have 3 actions.',
+      day: [MOVE, FIGHT, ['raise', 'Raise', '1 action', 'Add 2 hedgehogs at one of your hollows.'], ['build', 'Build a hollow', '1 action + matching card', 'In a clearing you rule that has a free slot. Gain 1 renown.'], CARDS],
+      dusk: [['', 'Score the hoard', '', 'Gain 1 renown for every 2 cards in your hand (up to 2).'], DRAW1, ['', 'Discard', '', 'Hedgehogs can hold 7 cards. Discard down to 7.']],
+    },
+    frog: {
+      tag: 'A marsh choir. Leap across wet ground and link a long chain of clearings.',
+      perk: 'Leap: frogs jump up to 2 clearings into any marsh or riverside clearing, ignoring rule.',
+      dawn: [['', 'Spawn', 'automatic', 'Add 1 frog at every lily pad and in every marsh clearing you rule.']],
+      dayNote: 'You have 3 actions.',
+      day: [['move', 'Move or leap', '1 action', 'Move to an adjacent clearing (you must rule one end), or leap up to 2 clearings into a marsh or riverside clearing.'], FIGHT, ['build', 'Float a lily pad', '1 action + matching card', 'In a marsh or riverside clearing you rule that has a free slot. Gain 1 renown.'], CARDS],
+      dusk: [['', 'Sing in chorus', '', 'Gain 1 renown for every clearing in your largest group of connected clearings you rule.'], DRAW1, ...DUSK_END],
+    },
+    mole: {
+      tag: 'Diggers from below. Tunnel under anyone and pop up across the map.',
+      perk: 'Underground: tunnels never count toward rule, so you can dig where others rule.',
+      dawn: [['', 'Surface', 'automatic', 'Add 1 mole at every tunnel.']],
+      dayNote: 'You have 3 actions.',
+      day: [['move', 'Move or tunnel', '1 action', 'Move to an adjacent clearing (you must rule one end), or travel from a tunnel to any other tunnel.'], FIGHT, ['build', 'Dig a tunnel', '1 action + matching card', 'In any clearing with your mole and a free slot, ruled or not. Gain 1 renown.'], CARDS],
+      dusk: [['', 'Score tunnels', '', 'Gain 1 renown for every tunnel in a clearing of the season\'s terrain, plus 1 for every 2 tunnels on the map.'], DRAW1, ...DUSK_END],
+    },
   };
   let displayPhase = 'day';
 
@@ -321,7 +359,7 @@
   }
 
   // ---------- playback of one step ----------
-  const NARR = /gain \d+ renown|breed|gather|take wing|collect \d+|toll|ambush|win|run out|draw \d+ card/i;
+  const NARR = /gain \d+ renown|breed|gather|take wing|collect \d+|toll|ambush|win|run out|draw \d+ card|prowl|forage|spawn|surface/i;
   async function narrate(lines, T) {
     for (const l of lines) {
       if (!NARR.test(l)) continue;
@@ -438,7 +476,7 @@
     clearInterval(spin);
     const fill = (id, rolls, need) => { const el = wrap.querySelector('#d-' + id); if (rolls.length) el.innerHTML = rolls.map(x => `<span class="die ${x >= need ? 'hit' : ''}">${x}</span>`).join(''); };
     fill('attack', b.attRolls, 4); fill('defend', b.defRolls, b.def === 'badger' ? 3 : 4);
-    if (b.attHits !== undefined) wrap.querySelector('#bres').innerHTML = `${short(b.att)} deal ${b.attHits} hit${b.attHits === 1 ? '' : 's'}${b.notes.some(n => /Defenseless/.test(n)) ? ' (incl. +1 defenseless)' : ''} · ${short(b.def)} deal ${b.defHits}`;
+    if (b.attHits !== undefined) wrap.querySelector('#bres').innerHTML = `${short(b.att)} deal ${b.attHits} hit${b.attHits === 1 ? '' : 's'}${b.notes.some(n => /Defenseless/.test(n)) ? ' (incl. +1 defenseless)' : ''} · ${short(b.def)} deal ${b.defHits}${b.notes.some(n => /Spines/.test(n)) ? ' (incl. +1 spines)' : ''}`;
     else wrap.querySelector('#bres').textContent = 'The ambush breaks the attack.';
     await T(1700);
     wrap.remove();
@@ -613,9 +651,9 @@
     const sph = new THREE.SphereGeometry(1, 20, 14), cone = new THREE.ConeGeometry(1, 1, 16), cyl = new THREE.CylinderGeometry(1, 1, 1, 20), box = new THREE.BoxGeometry(1, 1, 1);
     const P3 = (x, y, z) => new THREE.Vector3(x, y, z);
     const part = (g, geo, color, pos, scale, rot) => g.add(mesh(geo, color, pos, { toon: true, scale, rot }));
-    const FUR = { badger: '#5b544d', rabbit: '#efd36a', owl: '#d9692c', otter: '#8a5a38' };
-    const CLOAK = { badger: '#6e7c8c', rabbit: '#d9772b', owl: '#7a58a8', otter: '#2f7fb5' };
-    const EYE = { badger: .03, rabbit: .03, owl: .037, otter: .027 };
+    const FUR = { badger: '#5b544d', rabbit: '#efd36a', owl: '#d9692c', otter: '#8a5a38', fox: '#e07a3a', hedgehog: '#e9cfa4', frog: '#8fd16a', mole: '#4e3f4a' };
+    const CLOAK = { badger: '#6e7c8c', rabbit: '#d9772b', owl: '#7a58a8', otter: '#2f7fb5', fox: '#c0392b', hedgehog: '#8d6e3f', frog: '#3f9a4a', mole: '#c2507f' };
+    const EYE = { badger: .03, rabbit: .03, owl: .037, otter: .027, fox: .028, hedgehog: .027, frog: .034, mole: .018 };
     T3.make = { critter(f) {
       const g = new THREE.Group(), e = EYE[f];
       g.add(mesh(new THREE.CylinderGeometry(.065, .11, .17, 24), CLOAK[f], P3(0, .085, 0), { toon: true }));
@@ -630,9 +668,22 @@
       } else if (f === 'owl') {
         for (const s of [-1, 1]) part(g, cone, '#b8481f', P3(s * .055, .31, 0), [.028, .07, .028], [0, 0, -s * .44]);
         part(g, cone, '#f2bf34', P3(0, .205, .09), [.018, .045, .018], [1.75, 0, 0]);
-      } else {
+      } else if (f === 'otter') {
         part(g, sph, '#f1dcc0', P3(0, .2, .068), [.048, .032, .03]); part(g, sph, '#2a1a12', P3(0, .21, .096), [.014, .014, .014]);
         for (const s of [-1, 1]) part(g, sph, FUR[f], P3(s * .066, .278, 0), [.024, .024, .024]);
+      } else if (f === 'fox') {
+        part(g, sph, '#fbeedd', P3(0, .2, .07), [.05, .03, .035]); part(g, sph, '#2a1a12', P3(0, .207, .103), [.013, .013, .013]);
+        for (const s of [-1, 1]) part(g, cone, FUR[f], P3(s * .05, .325, 0), [.03, .08, .022], [0, 0, -s * .3]);
+      } else if (f === 'hedgehog') {
+        part(g, sph, '#2a1a12', P3(0, .212, .09), [.014, .014, .014]);
+        for (let k = 0; k < 9; k++) { const a = -1.3 + k * .325; part(g, cone, '#4a3524', P3(Math.sin(a) * .07, .24 + Math.cos(a) * .07, -.035), [.026, .075, .026], [-.5, 0, -a]); }
+      } else if (f === 'frog') {
+        g.children.slice(-4).forEach(m => { m.position.y += .055; });
+        for (const s of [-1, 1]) part(g, sph, FUR[f], P3(s * .036, .292, .045), [.042, .042, .042]);
+        part(g, box, '#2a1a12', P3(0, .2, .083), [.07, .006, .01]);
+      } else if (f === 'mole') {
+        part(g, sph, '#f0a3b8', P3(0, .207, .09), [.03, .022, .024]);
+        part(g, sph, '#ffd84a', P3(0, .3, .055), [.02, .02, .02]); part(g, cyl, '#6b5a3a', P3(0, .3, .035), [.03, .012, .03], [Math.PI / 2, 0, 0]);
       }
       return g;
     }, building(f) {
@@ -645,6 +696,9 @@
         flag(.12, -.05, .4);
       }
       if (f === 'otter') { part(g, box, '#a6794a', P3(0, .075, 0), [.22, .15, .2]); part(g, cone, CLOAK[f], P3(0, .2, 0), [.18, .12, .18], [0, Math.PI / 4, 0]); part(g, box, '#1e140e', P3(0, .05, .1), [.06, .1, .01]); flag(.13, -.05, .42); }
+      if (f === 'hedgehog') { part(g, cyl, '#8a6440', P3(0, .08, 0), [.09, .26, .09], [Math.PI / 2, 0, 0]); part(g, cyl, '#1e140e', P3(0, .08, .131), [.06, .01, .06], [Math.PI / 2, 0, 0]); part(g, sph, '#c4582a', P3(-.04, .17, -.05), [.05, .03, .05]); flag(.12, -.08, .38); }
+      if (f === 'frog') { part(g, cyl, '#5f9fb0', P3(0, .01, 0), [.16, .02, .16]); part(g, cyl, '#5aa84a', P3(0, .03, 0), [.13, .02, .13]); part(g, cone, '#f2a9c4', P3(.03, .07, .02), [.035, .06, .035]); flag(.12, -.06, .36); }
+      if (f === 'mole') { part(g, sph, '#7a5a3a', P3(0, 0, 0), [.13, .1, .12]); part(g, cyl, '#1e140e', P3(0, .05, .11), [.045, .01, .045], [1.2, 0, 0]); for (const x of [-.09, .08]) part(g, sph, '#9a948a', P3(x, .02, .07), [.03, .025, .03]); flag(.1, -.06, .36); }
       return g;
     }, flag(f) {
       const g = new THREE.Group(); part(g, cyl, '#3a2f1c', P3(0, .2, 0), [.012, .4, .012]); part(g, box, E.FACTIONS[f].color, P3(.1, .34, 0), [.2, .12, .01]); return g;
@@ -820,7 +874,7 @@
     const myTurn = idle() && st.players[st.current].faction === myF;
     const acts = myTurn ? E.listActions(st, myF) : [];
     $('handTitle').textContent = `Your hand · ${mp.hand.length} card${mp.hand.length === 1 ? '' : 's'}`;
-    $('handHint').textContent = st.phase === 'discard' && myTurn ? 'Too many cards: discard down to 5.' : myTurn ? 'Cards you can use show buttons.' : 'Ambush cards defend you by themselves.';
+    $('handHint').textContent = st.phase === 'discard' && myTurn ? `Too many cards: discard down to ${E.handLimit(myF)}.` : myTurn ? 'Cards you can use show buttons.' : 'Ambush cards defend you by themselves.';
     const h = $('hand'); h.innerHTML = '';
     if (!mp.hand.length) h.innerHTML = '<span class="muted">No cards. You draw at the end of your turn.</span>';
     for (const c of mp.hand) {
@@ -836,7 +890,11 @@
     const st = shown, myF = myFaction();
     $('track').innerHTML = st.players.map((p, i) => {
       const nb = E.buildingsOnMap(st, p.faction), tot = E.FACTIONS[p.faction].critters;
-      const res = p.faction === 'badger' ? [`<b>${p.stone}</b> stone`, `<b>${nb}/6</b> setts`] : p.faction === 'otter' ? [`<b>${p.coins}</b> coins`, `<b>${nb}/5</b> posts`] : p.faction === 'owl' ? [`<b>${nb}/4</b> nests`] : [`rules <b>${E.ruledCount(st, 'rabbit')}</b> clearings`];
+      const mx = E.FACTIONS[p.faction].maxB, bn = { hedgehog: 'hollows', frog: 'pads', mole: 'tunnels', owl: 'nests' }[p.faction];
+      const res = p.faction === 'badger' ? [`<b>${p.stone}</b> stone`, `<b>${nb}/6</b> setts`] : p.faction === 'otter' ? [`<b>${p.coins}</b> coins`, `<b>${nb}/5</b> posts`]
+        : p.faction === 'rabbit' ? [`rules <b>${E.ruledCount(st, 'rabbit')}</b> clearings`]
+        : p.faction === 'fox' ? [`rules <b>${E.ruledCount(st, 'fox')}</b> clearings`]
+        : p.faction === 'frog' ? [`<b>${nb}/${mx}</b> ${bn}`, `chain of <b>${E.chorus(st, 'frog')}</b>`] : [`<b>${nb}/${mx}</b> ${bn}`];
       const stats = [`<span class="wr"><b>${tot - E.supply(st, p.faction)}/${tot}</b> warriors</span>`, ...res.map(x => `<span>${x}</span>`), `<span><b>${p.hand.length}</b> cards</span>`];
       return `<div class="pchip ${i === st.current && st.phase !== 'over' ? 'cur' : ''}" data-f="${p.faction}" style="--pc:${E.FACTIONS[p.faction].color}">
         ${emblem(p.faction, 40)}<div style="min-width:0"><div class="nm">${esc(p.name)}${p.faction === myF ? ' (you)' : ''}</div><div class="sub">${E.FACTIONS[p.faction].name}${p.ai ? ' · AI' : ''}</div></div>
@@ -880,7 +938,7 @@
     const whole = acts.filter(a => a.type === 'muster' || a.type === 'hatch');
     whole.forEach(a => abtn(a, 'add', a.type === 'muster' ? 'Muster' : 'Hatch', a.type === 'muster' ? '+1 badger at every sett' : '+1 owl at every nest'));
     if (sel === null) {
-      add(`<p class="hint">Click a clearing with a <b>dashed gold ring</b> to act there.${myF === 'owl' ? ' Owls fly up to 2 clearings.' : ''}</p>`);
+      add(`<p class="hint">Click a clearing with a <b>dashed gold ring</b> to act there.${MOVE_HINT[myF] || ''}</p>`);
     } else {
       const c = R[sel], rl = E.ruler(st, sel);
       const here = st.players.filter(p => E.pieces(st, sel, p.faction) > 0).map(p => `${short(p.faction)} ${E.critters(st, sel, p.faction)}${E.buildingsOf(st, sel, p.faction) ? ' + building' : ''}`).join(' · ') || 'empty';
@@ -890,7 +948,7 @@
       if (moves.length) {
         const max = moves[0].max; if (!moveCount || moveCount > max) moveCount = max;
         const mv = document.createElement('div'); mv.className = 'panel'; mv.style.padding = '10px';
-        mv.innerHTML = `<div class="hint"><b>${myF === 'owl' ? 'Fly' : 'Move'}:</b> choose how many, then click a <b>glowing clearing</b>.</div>
+        mv.innerHTML = `<div class="hint"><b>${MOVE_VERB[myF] || 'Move'}:</b> choose how many, then click a <b>glowing clearing</b>.</div>
           <div class="stepper"><button id="mvMinus" aria-label="Fewer">−</button><output id="mvOut">${moveCount}</output><button id="mvPlus" aria-label="More">+</button><span class="hint">of ${max}</span></div>`;
         box.appendChild(mv);
         mv.querySelector('#mvMinus').onclick = () => { moveCount = Math.max(1, moveCount - 1); mv.querySelector('#mvOut').textContent = moveCount; };
@@ -902,7 +960,9 @@
           const md = myF === 'owl' ? Math.min(4, mine * 2) : Math.min(3, mine);
           const td = theirs ? (a.target === 'owl' ? Math.min(4, theirs * 2) : Math.min(3, theirs)) + (E.buildingsOf(st, sel, a.target) ? 1 : 0) : 0;
           abtn(a, 'fight', `Attack the ${short(a.target)}`, theirs ? `You roll ${md} dice, they roll ${td}` : `They have no defenders: +1 hit for you`);
-        } else if (a.type === 'build') abtn(a, 'build', { badger: 'Dig a sett', owl: 'Build a nest', otter: 'Open a trading post' }[myF], a.label.replace(/^.*\(/, '').replace(/\)$/, ''));
+        } else if (a.type === 'build') abtn(a, 'build', BUILD_BTN[myF], a.label.replace(/^.*\(/, '').replace(/\)$/, ''));
+        else if (a.type === 'raid') abtn(a, 'card', `Raid the ${short(a.target)}`, 'Steal a random card, +1 renown');
+        else if (a.type === 'raise') abtn(a, 'add', 'Raise 2 hedgehogs', '1 action');
         else if (a.type === 'burst') abtn(a, 'add', 'Burrow burst: +3 rabbits', `Pay a ${c.terrain} card`);
         else if (a.type === 'hire') abtn(a, 'add', 'Hire 2 otters', '2 coins');
       }
@@ -938,7 +998,7 @@
     if (myF) facs.sort((a, b) => (b === myF) - (a === myF));
     tutPages = [
       { t: 'Welcome to Thornwood', h: `
-        <p class="tp-lede">Up to four woodland factions fight over the forest. Each faction plays by its own rules and scores <b>renown</b> in its own way.</p>
+        <p class="tp-lede">Up to four of eight woodland factions fight over the forest. Each faction plays by its own rules and scores <b>renown</b> in its own way.</p>
         <div class="tp-grid">
           <div class="tp-tile"><svg width="34" height="34"><use href="#i-star" width="100%" height="100%"/></svg><b>Goal</b><small>The first to <b>30 renown</b> wins at once. After 20 rounds, the most renown wins.</small></div>
           <div class="tp-tile"><div>${gem('meadow', 22)} ${gem('marsh', 22)} ${gem('grove', 22)}</div><b>Clearings</b><small>13 clearings, each meadow, marsh or grove. The squares on a clearing are building slots.</small></div>

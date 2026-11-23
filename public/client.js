@@ -106,7 +106,7 @@
       for (let k = 0; k < R.slots; k++) {
         const x = R.x - (R.slots * 30 - 6) / 2 + k * 30, y = R.y - 46, b = reg.b[k];
         h += `<rect x="${x}" y="${y}" width="24" height="24" rx="5" fill="${b ? `var(--${b})` : 'rgba(255,255,255,.55)'}" stroke="rgba(0,0,0,.35)"/>`;
-        if (b) h += `<text class="pc" x="${x + 12}" y="${y + 17}" text-anchor="middle">${{ badger: '⌂', owl: '◉', otter: '⚓' }[b]}</text>`;
+        if (b) h += `<text class="pc" x="${x + 12}" y="${y + 17}" text-anchor="middle">${{ badger: '⌂', owl: '◉', otter: '⚓', hedgehog: '∩', frog: '❀', mole: '●' }[b]}</text>`;
       }
       // critters
       const fs = s.players.map(p => p.faction).filter(f => reg.c[f] > 0);

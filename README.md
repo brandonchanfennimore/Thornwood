@@ -1,6 +1,6 @@
 # Thornwood
 
-An original strategy board game for 2 to 4 players that you play in the browser. Four woodland factions fight over a forest, and each one plays by its own rules. Play solo against AI opponents, or create a room and invite friends to play online.
+An original strategy board game for 2 to 4 players that you play in the browser. Eight woodland factions, up to four per game, fight over a forest, and each one plays by its own rules. Play solo against AI opponents, or create a room and invite friends to play online.
 
 <!-- Live site: add your Vercel link here -->
 ![Thornwood game board in the Artistic style](docs/screenshots/game-art.png)
@@ -17,7 +17,7 @@ Choose a visual style from the menu in the top bar. The game remembers your choi
 
 ## Features
 
-- **4 asymmetric factions:** each has its own resources, actions, and way to score
+- **8 asymmetric factions:** each has its own resources, actions, and way to score
 - **Solo mode:** fill any seat with an AI opponent on Easy, Medium, or Hard
 - **Online multiplayer:** create a room, share the 4-letter code or invite link, and friends join from their own browsers
 - **Mix humans and AI:** in an online game, any empty seat can be an AI player
@@ -34,6 +34,10 @@ Choose a visual style from the menu in the top bar. The game remembers your choi
 | **Rabbit Warrens** | A swarm that breeds fast and spreads wide | **Swarm:** 28 rabbits, more critters than any other faction |
 | **Owl Parliament** | Few, fierce flyers who hunt other factions and raise nests | **Talons:** each owl rolls 2 dice in battle (up to 4) |
 | **Otter Company** | River merchants who pay coins to act | **Tolls:** gain 1 coin whenever another faction moves into a clearing with your trading post |
+| **Fox Raiders** | Thieves who raid other factions for cards and lurk by their buildings | **Sly:** foxes move without needing to rule either clearing |
+| **Hedgehog Hollows** | Hoarders who stockpile cards (hand of 7) and score for them | **Spines:** deal 1 extra hit when defending |
+| **Frog Chorus** | A marsh choir that scores its largest chain of connected clearings | **Leap:** jump up to 2 clearings into any marsh or riverside clearing |
+| **Mole Delvers** | Diggers who tunnel anywhere they have a mole and travel tunnel to tunnel | **Underground:** tunnels don't count toward rule |
 
 ## How to Play
 
