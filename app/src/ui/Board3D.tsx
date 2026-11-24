@@ -6,6 +6,7 @@ import { E, MAP, type Faction, type MapDef } from '../game/engine';
 import { PALETTES, slotPos, tokenLayout } from '../game/board';
 import { myActions, useGame } from '../game/store';
 import { ClearingPopup } from './ClearingPopup';
+import { INK_CLR, INK_GROUND, inkTrees } from '../game/ink';
 
 THREE.ColorManagement.enabled = false; // match the flat, saturated colors of the original 3D view
 
@@ -46,11 +47,16 @@ function build(cv: HTMLCanvasElement, m: MapDef, onPick: (r: number) => void, on
   };
   const R = m.regions, board = new THREE.Group(); scene.add(board);
   board.add(mesh(new THREE.BoxGeometry(10.8, 0.3, 8.5), '#7a5232', new THREE.Vector3(0, -0.16, 0)));
-  board.add(mesh(new THREE.BoxGeometry(10.4, 0.02, 8.1), pal.bg, new THREE.Vector3(0, -0.01, 0), { cast: false }));
+  // ink art: the season's ground tiled across the board, clearing textures tinted by the season's fill color
+  const tex = (url: string, rx = 1, ry = rx) => { const t = new THREE.TextureLoader().load(url); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.anisotropy = 4; return t; };
+  const ground = new THREE.Mesh(new THREE.BoxGeometry(10.4, 0.02, 8.1), new THREE.MeshLambertMaterial({ map: tex(INK_GROUND[m.key], 13, 10.1) }));
+  ground.position.y = -0.01; ground.receiveShadow = true; board.add(ground);
+  const clrMat = Object.fromEntries((['meadow', 'marsh', 'grove'] as const).map(t => [t, new THREE.MeshLambertMaterial({ color: pal.fill[t] || TER[t], map: tex(INK_CLR[t]) })]));
   const tops: THREE.Mesh[] = [], rings: THREE.Mesh[] = [];
   R.forEach((c, i) => {
     board.add(mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.08, 64), '#3b2418', V3(c.x, c.y, 0.04)));
-    const t = mesh(new THREE.CylinderGeometry(0.71, 0.71, 0.1, 64), pal.fill[c.terrain] || TER[c.terrain], V3(c.x, c.y, 0.05)); t.userData.r = i; tops.push(t); board.add(t);
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.71, 0.71, 0.1, 64), clrMat[c.terrain]); t.position.copy(V3(c.x, c.y, 0.05)); t.receiveShadow = true;
+    t.userData.r = i; tops.push(t); board.add(t);
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.03, 8, 64), new THREE.MeshBasicMaterial({ color: '#ffe27a', transparent: true }));
     ring.rotation.x = -Math.PI / 2; ring.position.copy(V3(c.x, c.y, 0.11)); ring.visible = false; board.add(ring); rings.push(ring);
   });
@@ -89,21 +95,24 @@ function build(cv: HTMLCanvasElement, m: MapDef, onPick: (r: number) => void, on
   const spots: { v: THREE.Vector3; r: number; h: number; col: number }[] = [];
   for (let gx = -10; gx < 1010; gx += 30) for (let gy = -14; gy < 776; gy += 30) {
     const p = { x: gx + rand() * 22, y: gy + rand() * 22 };
-    if (R.some(c => Math.hypot(c.x - p.x, c.y - p.y) < 100) || segs.some(([a, b, w]) => segDist(p, a, b) < w) || rand() < .18) continue;
+    if (R.some(c => Math.hypot(c.x - p.x, c.y - p.y) < 100) || segs.some(([a, b, w]) => segDist(p, a, b) < w) || rand() < .6) continue;
     const v = V3(p.x, p.y), r = (12 + rand() * 9) * .01, h = r * (1.4 + rand() * .6), col = Math.floor(rand() * 5);
     if (plates.some(q => Math.abs(v.x - q.x) < q.w / 2 + .25 && v.z - q.z > -.25 && v.z - q.z < 1)) continue;
     spots.push({ v, r, h, col });
   }
-  const pine = !!pal.pine, leaf = pal.trees.map(c => new THREE.Color(c));
-  const can = new THREE.InstancedMesh(pine ? new THREE.ConeGeometry(1, 1.6, 7) : new THREE.IcosahedronGeometry(1, 1), new THREE.MeshLambertMaterial({ flatShading: true }), spots.length);
-  const tr = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 7), new THREE.MeshLambertMaterial({ color: '#6e6080' }), spots.length);
-  const o = new THREE.Object3D();
-  spots.forEach((s, i) => {
-    o.position.set(s.v.x, s.h / 2, s.v.z); o.scale.set(s.r * .18, s.h, s.r * .18); o.rotation.set(0, 0, 0); o.updateMatrix(); tr.setMatrixAt(i, o.matrix);
-    o.position.set(s.v.x, s.h + s.r * (pine ? .8 : .55), s.v.z); o.scale.set(s.r * (pine ? .8 : 1.15), s.r * .95, s.r * (pine ? .8 : 1.15)); o.rotation.y = i; o.updateMatrix(); can.setMatrixAt(i, o.matrix);
-    can.setColorAt(i, leaf[s.col]);
+  // ink trees as billboards: the camera only pans and zooms, so they always stand upright facing it
+  const kinds = inkTrees(m.key).map(u => {
+    const k = { mat: new THREE.SpriteMaterial({ alphaTest: 0.5 }), sprites: [] as THREE.Sprite[] };
+    // widen each sprite to its picture's shape once it loads (mirrored on every other tree for variety)
+    k.mat.map = new THREE.TextureLoader().load(u, t => { const ar = t.image.width / t.image.height; k.sprites.forEach(sp => { sp.scale.x = sp.scale.y * ar * Math.sign(sp.scale.x); }); });
+    return k;
   });
-  can.castShadow = tr.castShadow = true; board.add(can, tr);
+  const shade = new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: .22, depthWrite: false }), disc = new THREE.CircleGeometry(1, 20);
+  spots.forEach((s, i) => {
+    const k = kinds[(i + s.col) % kinds.length], sp = new THREE.Sprite(k.mat), h = s.h * 2.3;
+    sp.scale.set(h * .9 * (i % 2 ? -1 : 1), h, 1); sp.center.set(.5, 0); sp.position.set(s.v.x, 0, s.v.z); k.sprites.push(sp); board.add(sp);
+    const d = new THREE.Mesh(disc, shade); d.rotation.x = -Math.PI / 2; d.scale.set(s.r * 1.1, s.r * .7, 1); d.position.set(s.v.x + .03, .003, s.v.z + .02); board.add(d);
+  });
   // critters and buildings, as storybook toys (toon shaded). Front faces the camera (+z).
   const sph = new THREE.SphereGeometry(1, 20, 14), cone = new THREE.ConeGeometry(1, 1, 16), cyl = new THREE.CylinderGeometry(1, 1, 1, 20), box = new THREE.BoxGeometry(1, 1, 1);
   const P3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);

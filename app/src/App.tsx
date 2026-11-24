@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import sprites from './assets/sprites.svg?raw';
+import { INK_SPRITES } from './game/ink';
 import { isHost, useGame } from './game/store';
 import { Lobby } from './ui/Lobby';
 import { Board } from './ui/Board';
@@ -13,7 +14,7 @@ import { Guide } from './ui/Guide';
 export default function App() {
   const game = useGame(s => s.game), battle = useGame(s => s.battle), aiStep = useGame(s => s.aiStep);
   // AI acts in its Day, and also while it must discard down to its hand limit (shown as Dusk).
-  const day = useGame(s => s.turnPhase === 'day' || s.game?.phase === 'discard'), speed = useGame(s => s.speed), guide = useGame(s => s.guideOpen), mode = useGame(s => s.mode), host = useGame(isHost), seated = useGame(s => !!s.me), netError = useGame(s => s.netError);
+  const day = useGame(s => s.turnPhase === 'day' || s.game?.phase === 'discard'), speed = useGame(s => s.speed), guide = useGame(s => s.guideOpen), mode = useGame(s => s.mode), host = useGame(isHost), seated = useGame(s => !!s.me), netError = useGame(s => s.netError), simple = useGame(s => s.look === 'simple');
   // AI players take one action at a time, with a pause so you can follow along (longer after a battle).
   // Online, the host's browser plays the AI. If the host goes quiet, any seated player takes over after 15 seconds.
   useEffect(() => {
@@ -25,6 +26,7 @@ export default function App() {
   }, [game, battle, aiStep, mode, host, seated, guide, day, speed]);
   return (
     <>
+      {!simple && <div dangerouslySetInnerHTML={{ __html: INK_SPRITES }} />}
       <div dangerouslySetInnerHTML={{ __html: sprites }} />
       <Board />
       {game ? <><Hud /><PhaseBar /><Banner /><Feed /><TurnPanel /><Hand /><BattleRoll /></> : mode === 'online' ? <Lobby /> : <Setup />}
