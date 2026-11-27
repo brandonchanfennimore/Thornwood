@@ -5,6 +5,7 @@ import { Emblem } from './Emblem';
 import { ResIcon } from './Res';
 import { Speed } from './Overlays';
 import { LookSwitch } from './LookSwitch';
+import { Logo } from './Logo';
 
 function resources(st: State, p: Player): React.ReactNode[] {
   const B = (n: string) => <><svg width={13} height={13} aria-hidden="true"><use href={`#b-${p.faction}`} width="100%" height="100%" /></svg>{n}</>;
@@ -24,7 +25,7 @@ export function Hud() {
   const game = useGame(s => s.game)!, quit = useGame(s => s.quit), setGuide = useGame(s => s.setGuide);
   return (
     <div className="hud">
-      <button className="brand" onClick={() => { if (confirm('Leave this game?')) quit(); }} title="Leave game">Thornwood</button>
+      <button className="brand" onClick={() => { if (confirm('Leave this game?')) quit(); }} title="Leave game"><Logo /></button>
       <div className="chips">
         {game.players.map((p, i) => {
           const tot = E.FACTIONS[p.faction].critters, cur = i === game.current && game.phase !== 'over';

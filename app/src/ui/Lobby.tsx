@@ -6,6 +6,7 @@ import { isHost, useGame } from '../game/store';
 import { AI_NAMES } from '../game/text';
 import { Emblem, RandomEmblem } from './Emblem';
 import { MapPicker } from './MapPicker';
+import { Logo } from './Logo';
 
 export function Lobby() {
   const room = useGame(s => s.room), uid = useGame(s => s.uid), host = useGame(isHost);
@@ -22,6 +23,7 @@ export function Lobby() {
   return (
     <div className="setup-wrap">
       <motion.div className="setup lobby" initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+        <h1><Logo /></h1>
         <div className="lobby-head">
           <div><span className="lbl">Room code</span><div className="code">{room.code}</div></div>
           <div className="lobby-share">

@@ -1,0 +1,94 @@
+/* Artistic (and 3D) interface skin: torn parchment panels, painted wooden signs and storybook lettering, to match the
+   ink-and-marker map art. Every surface draws its look on a ::before layer that goes through the #ui-rough filter
+   (defined in game/ink.ts), so edges wobble like hand-cut paper while the text above stays crisp.
+   Simple ignores this file: every rule is scoped to :root[data-style="art"]. */
+:root[data-style="art"] {
+  --display: "Alegreya SC", Georgia, serif; --body: "Alegreya Sans", system-ui, sans-serif;
+  --panel: #f6e8c8; --parch: #f6e8c8; --line: #3b2418; --ink: #2a1a12; --muted: #6b5240;
+  --accent: #a8432a; --accent-ink: #fff3dc; --sel: #f1d69c;
+  --paper: url('./assets/ink/ui/parchment.webp') center / 320px;
+  --wood: url('./assets/ink/ui/wood.webp') center / 340px;
+  --wood-red: url('./assets/ink/ui/wood-red.webp') center / 340px;
+  --wood-green: url('./assets/ink/ui/wood-green.webp') center / 340px;
+  --drop: drop-shadow(2px 3px 0 rgba(42, 26, 18, .6));
+  --nails: radial-gradient(circle at 9px 50%, #2a1a12 0 2.2px, #8c6a48 2.6px, transparent 3.4px),
+           radial-gradient(circle at calc(100% - 9px) 50%, #2a1a12 0 2.2px, #8c6a48 2.6px, transparent 3.4px);
+}
+
+/* Every skinned surface: the box itself goes clear and its ::before paints paper (or wood) with rough edges. */
+:root[data-style="art"] :is(
+  button:not(.link, .ghost, .x, .feed-t, .g-dot), .chip, .season, .turn, .feed, .popup, .setup, .guide, .banner,
+  .phasebar, .battle, .seat, .online-box, .g-tile, .g-ph, .card
+) {
+  isolation: isolate; background: transparent; border-color: transparent; box-shadow: none;
+}
+:root[data-style="art"] :is(button:not(.link, .ghost, .x, .feed-t, .g-dot), .season, .setup, .guide, .banner, .seat, .online-box, .g-tile, .g-ph) { position: relative; }
+/* :where keeps this rule weak so the frame and state rules below can override it. */
+:root[data-style="art"] :where(
+  button:not(.link, .ghost, .x, .feed-t, .g-dot), .chip, .season, .turn, .feed, .popup, .setup, .guide, .banner,
+  .phasebar, .battle, .seat, .online-box, .g-tile, .g-ph, .card
+)::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: var(--skin, var(--paper)); border: 2.5px solid var(--line); border-radius: 5px;
+  filter: url(#ui-rough) var(--drop);
+}
+
+/* Big frames: parchment inside a wooden board, like a notice nailed up in the woods. */
+:root[data-style="art"] :is(.setup, .guide, .battle)::before {
+  border: 11px solid transparent; border-radius: 8px;
+  background: var(--paper) padding-box, var(--wood) border-box;
+  box-shadow: inset 0 0 0 2px var(--line), 0 0 0 2.5px var(--line);
+  filter: url(#ui-rough) drop-shadow(5px 7px 0 rgba(42, 26, 18, .55));
+}
+:root[data-style="art"] :is(.setup, .guide) { padding: 30px; border-radius: 8px; }
+:root[data-style="art"] .guide { overflow: visible; }
+:root[data-style="art"] .g-body, :root[data-style="art"] .g-foot { position: relative; }
+:root[data-style="art"] .g-foot { background: rgba(59, 36, 24, .07); border-top: 2px dashed rgba(59, 36, 24, .4); margin: 0 4px 4px; }
+:root[data-style="art"] .battle { padding: 22px 26px; }
+
+/* Panels floating over the map get a slightly heavier drop so they lift off the trees. */
+:root[data-style="art"] :is(.turn, .feed, .popup, .chip, .phasebar, .season)::before { --drop: drop-shadow(3px 4px 0 rgba(42, 26, 18, .6)); }
+
+/* Score chips: the current player gets a ring of their colour. */
+:root[data-style="art"] .chip { overflow: visible; }
+:root[data-style="art"] .chip-main { overflow: hidden; }
+:root[data-style="art"] .chip.cur::before { box-shadow: 0 0 0 3px var(--pc); }
+:root[data-style="art"] .chip-bar { left: 4px; bottom: 3px; height: 4px; border-radius: 2px; max-width: calc(100% - 8px); }
+:root[data-style="art"] .chip-stats span, :root[data-style="art"] .cost { background: rgba(59, 36, 24, .09); }
+
+/* Buttons: plain ones are paper tags; primary ones are painted red signs; big ones get nails. */
+:root[data-style="art"] button:not(.link, .ghost, .x, .feed-t, .g-dot) { border-radius: 5px; font-weight: 600; }
+:root[data-style="art"] button:not(.link, .ghost, .x, .feed-t, .g-dot):active { transform: translate(1px, 2px); }
+:root[data-style="art"] button:not(.link, .ghost, .x, .feed-t, .g-dot):active::before { --drop: drop-shadow(1px 1px 0 rgba(42, 26, 18, .6)); }
+:root[data-style="art"] button.primary { color: var(--accent-ink); text-shadow: 0 1px 0 rgba(42, 26, 18, .7); }
+:root[data-style="art"] button.primary::before { --skin: var(--wood-red); }
+:root[data-style="art"] button.primary.big::before { --skin: var(--nails), var(--wood-red); }
+:root[data-style="art"] button.big { font-size: 20px; padding: 12px 28px; letter-spacing: .02em; }
+:root[data-style="art"] button:disabled { opacity: .55; cursor: default; }
+
+/* Choices that are switched on (tabs, player count, difficulty) turn to plain wood with cream text. */
+:root[data-style="art"] .seg { gap: 4px; }
+:root[data-style="art"] .seg button { margin-left: 0; border-radius: 5px; }
+:root[data-style="art"] .seg button.on { color: var(--accent-ink); text-shadow: 0 1px 0 rgba(42, 26, 18, .7); }
+:root[data-style="art"] .seg button.on::before { --skin: var(--wood); }
+:root[data-style="art"] :is(.fac, .map-card).on { box-shadow: none; }
+:root[data-style="art"] :is(.fac, .map-card).on::before { --skin: linear-gradient(rgba(217, 154, 28, .3), rgba(217, 154, 28, .3)), var(--paper); border-color: var(--accent); border-width: 3px; }
+:root[data-style="art"] .fac.random::before { --skin: linear-gradient(rgba(255, 255, 255, .25), rgba(255, 255, 255, .25)), var(--paper); }
+:root[data-style="art"] .map-swatch { border-radius: 3px; }
+
+/* Guide phases keep their dawn / day / dusk tint over the paper. */
+:root[data-style="art"] .g-dawn::before { --skin: linear-gradient(rgba(251, 200, 160, .45), rgba(251, 200, 160, .45)), var(--paper); }
+:root[data-style="art"] .g-day::before { --skin: linear-gradient(rgba(253, 226, 140, .45), rgba(253, 226, 140, .45)), var(--paper); }
+:root[data-style="art"] .g-dusk::before { --skin: linear-gradient(rgba(190, 184, 240, .45), rgba(190, 184, 240, .45)), var(--paper); }
+
+/* Cards: parchment with a torn edge and a dashed rule under the art. */
+:root[data-style="art"] .card { overflow: visible; }
+:root[data-style="art"] .card.up::before { box-shadow: 0 0 0 3px var(--gold); }
+:root[data-style="art"] .card-art { border-bottom: 2px dashed rgba(59, 36, 24, .45); margin: 0 6px; }
+:root[data-style="art"] .card-name { font-size: 16px; }
+:root[data-style="art"] .card-text { color: #4d3b28; font-size: 12px; }
+
+/* Lettering and inputs. */
+:root[data-style="art"] :is(.field input, .code-in, .seat select, select.look) { background: rgba(255, 250, 238, .85); border-radius: 5px; }
+:root[data-style="art"] select.look { box-shadow: 2px 3px 0 rgba(42, 26, 18, .6); }
+:root[data-style="art"] :is(.hand-note, .net-err) { border-radius: 5px; }
